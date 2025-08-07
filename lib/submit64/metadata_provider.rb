@@ -75,7 +75,7 @@ module Submit64
             form_field_type = self.submit64_get_form_field_type_by_column_name(field_map, field_type)
             form_rules = self.submit64_get_column_rules(field_map, field_type, form_metadata, context[:name])
             form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
-            return {
+            {
               field_name: field_map[:target],
               form_field_type: form_field_type,
               form_label: field_map[:label],
@@ -86,10 +86,10 @@ module Submit64
             }
           else
             # TODO association select
-            return {}
+            {}
           end
         end
-        return {
+        {
           fields: fields,
           label: section_map[:label],
           icon: section_map[:icon],

@@ -124,7 +124,7 @@ module Submit64
     end
 
     def submit64_get_form_field_type_by_column_name(field, field_type)
-      association = self.reflect_on_association[field[:target]]
+      association = self.reflect_on_association(field[:target])
       if association.nil?
         case field_type
         when "text"
@@ -157,7 +157,7 @@ module Submit64
         return rules
       end
 
-      if !self.reflect_on_association[field[:target]].nil?
+      if !self.reflect_on_association(field[:target]).nil?
         # TODO required sur les belongs_to
         return rules
       end

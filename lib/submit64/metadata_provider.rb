@@ -2,14 +2,14 @@ require 'active_record'
 
 module Submit64
         
-  module MetaDataProvider
+  module MetadataProvider
     def self.extended(base)
       unless base < ActiveRecord::Base
-        raise "#{base} must inherit from ActiveRecord::Base to extend Submit64::MetaDataProvider"
+        raise "#{base} must inherit from ActiveRecord::Base to extend Submit64::MetadataProvider"
       end
     end
 
-    def submit64_get_form_meta_data(context = nil)
+    def submit64_get_form_metadata_and_data(context = nil)
       unless self < ActiveRecord::Base
         raise "Method must be called from ActiveRecord::Base inherited class"
       end
@@ -28,6 +28,9 @@ module Submit64
           form_metadata = method_column_builder.call
         end
       end
+      if context.nil?
+        context = {}
+      end
 
       # Filters
       section_index_to_purge = []
@@ -45,7 +48,7 @@ module Submit64
             next
           end
           if !field[:target].nil?
-            if self.columns_hash[field[:target]].nil? ²² self.reflect_on_association[field[:target]].nil?
+            if self.columns_hash[field[:target]].nil? && self.reflect_on_association[field[:target]].nil?
               field_index_to_purge << index_field              
             end
           else
@@ -66,7 +69,7 @@ module Submit64
           if !self.columns_hash(field_map[:target]).nil?
             field_type = self.submit64_get_column_type_by_sql_type(columns_hash[field_map[:target].to_s].type)
             form_field_type = self.submit64_get_form_field_type_by_column_name(field_map, field_type)
-            form_rules = self.submit64_get_column_rules(field_map, field_type, form_metadata, context)
+            form_rules = self.submit64_get_column_rules(field_map, field_type, form_metadata, context[:name])
             form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
             return {
               field_name: field_map[:target],
@@ -92,11 +95,11 @@ module Submit64
       form_metadata
     end
 
+    private
     def submit64_get_resource_data(form_metadata)
       # TODO get resource data, only the field from metadata
     end
 
-    private
     def submit64_get_column_type_by_sql_type(sql_type)
       field_type = 'string'
       case sql_type
@@ -140,7 +143,7 @@ module Submit64
       end
     end
 
-    def submit64_get_column_rules(field, field_type, form, context)
+    def submit64_get_column_rules(field, field_type, form, context_name)
       now = Time.now
       rules = []
 
@@ -159,7 +162,7 @@ module Submit64
         is_value_class_array = -> (value) { return value.class == Array }
 
         validator_context = validator.options[:on]
-        if !validator_context.nil? && validator_context != context
+        if !validator_context.nil? && validator_context != context_name
           next
         end
 

@@ -52,7 +52,7 @@ module Submit64
             end
           end
           if !field[:target].nil?
-            if self.columns_hash[field[:target]].nil? && self.reflect_on_association[field[:target]].nil?
+            if self.columns_hash[field[:target]].nil? && self.reflect_on_association(field[:target]).nil?
               field_index_to_purge << index_field              
             end
           else

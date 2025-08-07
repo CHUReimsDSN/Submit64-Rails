@@ -52,7 +52,7 @@ module Submit64
             end
           end
           if !field[:target].nil?
-            if self.columns_hash[field[:target]].nil? && self.reflect_on_association(field[:target]).nil?
+            if self.columns_hash[field[:target].to_s].nil? && self.reflect_on_association(field[:target]).nil?
               field_index_to_purge << index_field              
             end
           else
@@ -69,9 +69,9 @@ module Submit64
 
       # Projection
       form_metadata[:sections] = form_metadata[:sections].map do |section_map|
-       fields = section_map[:fields].map do |field_map|
-          if !self.columns_hash[field_map[:target]].nil?
-            field_type = self.submit64_get_column_type_by_sql_type(columns_hash[field_map[:target]].type)
+        fields = section_map[:fields].map do |field_map|
+          if !self.columns_hash[field_map[:target].to_s].nil?
+            field_type = self.submit64_get_column_type_by_sql_type(columns_hash[field_map[:target].to_s].type)
             form_field_type = self.submit64_get_form_field_type_by_column_name(field_map, field_type)
             form_rules = self.submit64_get_column_rules(field_map, field_type, form_metadata, context[:name])
             form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
@@ -86,6 +86,7 @@ module Submit64
             }
           else
             # TODO association select
+            return {}
           end
         end
         return {
@@ -96,7 +97,7 @@ module Submit64
         }
       end
 
-      form_metadata
+      return form_metadata
       # TODO get data
     end
 

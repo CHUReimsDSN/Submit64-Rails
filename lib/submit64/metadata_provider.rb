@@ -35,17 +35,21 @@ module Submit64
       # Filters
       section_index_to_purge = []
       form_metadata[:sections].each_with_index do |section, index_section|
-        result_section_policy = section[:policy].call(Submit64.current_user)
-        if !result_section_policy
-          section_index_to_purge << index_section
-          next
+        if section[:policy]
+          result_section_policy = section[:policy].call(Submit64.current_user)
+          if !result_section_policy
+            section_index_to_purge << index_section
+            next
+          end
         end
         field_index_to_purge = []
         section[:fields].each_with_index do |field, index_field|
-          result_field_policy = field[:policy].call(Submit64.current_user)
-          if !result_field_policy
-            field_index_to_purge << index_field
-            next
+          if field[:policy]
+            result_field_policy = field[:policy].call(Submit64.current_user)
+            if !result_field_policy
+              field_index_to_purge << index_field
+              next
+            end
           end
           if !field[:target].nil?
             if self.columns_hash[field[:target]].nil? && self.reflect_on_association[field[:target]].nil?

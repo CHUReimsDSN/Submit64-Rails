@@ -97,8 +97,10 @@ module Submit64
         }
       end
 
-      return form_metadata
       # TODO get data
+      return {
+        form: form_metadata
+      }
     end
 
     private

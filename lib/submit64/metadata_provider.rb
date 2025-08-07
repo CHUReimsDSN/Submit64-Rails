@@ -126,7 +126,7 @@ module Submit64
     def submit64_get_form_field_type_by_column_name(field, field_type)
       association = self.reflect_on_association(field[:target])
       if association.nil?
-        case field_type
+        case field_type.to_s
         when "text"
           return "text"
         when "string"
@@ -139,6 +139,8 @@ module Submit64
           return "checkbox"
         when "object"
           return "object"
+        else
+          return "string"
         end
       end
       case association.class.to_s.demodulize

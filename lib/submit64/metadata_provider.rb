@@ -82,7 +82,7 @@ module Submit64
             {
               field_name: field_map[:target],
               form_field_type: form_field_type,
-              form_label: field_map[:label],
+              form_label: field_map[:label] || self.submit64_beautify_target(field_map[:target]),
               form_hint: field_map[:hint],
               form_rules: form_rules,
               form_select_options: form_select_options,
@@ -120,8 +120,10 @@ module Submit64
           field_type = 'text'
         when :integer
           field_type = 'number'
-        when :datetime
+        when :date
           field_type = 'date'
+        when :datetime
+          field_type = 'datetime'
         when :boolean
           field_type = 'boolean'
         when :jsonb
@@ -143,7 +145,7 @@ module Submit64
         when "date"
           return "date"
         when "datetime"
-          return "date"
+          return "datetime"
         when "boolean"
           return "checkbox"
         when "object"
@@ -381,6 +383,10 @@ module Submit64
       end
 
       return []
+    end
+
+    def submit64_beautify_target(target)
+      return target.capitalize.gsub('_', ' ')
     end
 
   end

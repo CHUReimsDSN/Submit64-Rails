@@ -386,7 +386,7 @@ module Submit64
     end
 
     def submit64_beautify_target(target)
-      return target.capitalize.gsub('_', ' ')
+      return target.to_s.capitalize.gsub('_', ' ')
     end
 
   end

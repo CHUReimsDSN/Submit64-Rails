@@ -142,6 +142,8 @@ module Submit64
           return "number"
         when "date"
           return "date"
+        when "datetime"
+          return "date"
         when "boolean"
           return "checkbox"
         when "object"
@@ -159,7 +161,6 @@ module Submit64
     end
 
     def submit64_get_column_rules(field, field_type, form, context_name)
-      now = Time.now
       rules = []
 
       if !form[:use_model_validations] || field[:ignore_validation]
@@ -352,7 +353,6 @@ module Submit64
             rules << { type: "backend", backend_hint: "Contrainte spécifique" }
         end
       end
-      puts now - Time.now
       return rules
     end
 

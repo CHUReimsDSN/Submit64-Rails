@@ -14,6 +14,9 @@ module Submit64
         raise "Method must be called from ActiveRecord::Base inherited class"
       end
       context = request_params[:context]
+      if context != nil
+        context = context.to_h
+      end
 
       # First sructuration
       form_metadata = {
@@ -101,7 +104,7 @@ module Submit64
       # TODO get data
       return {
         form: form_metadata,
-        resource_data: self.find(request_params[:resorce_id])
+        resource_data: self.find(request_params[:resourceId])
       }
     end
 

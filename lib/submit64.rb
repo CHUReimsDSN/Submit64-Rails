@@ -21,11 +21,8 @@ module Submit64
     if !resource_class.singleton_class.ancestors.include?(Submit64::MetadataProvider)
       raise Submit64Exception.new("This resource does not extend Submit64 : #{resource_name}", 400)
     end
-    context = params[:submit64Params][:context]
-    if context != nil
-      context = context.to_h
-    end
-    resource_class.submit64_get_form_metadata_and_data(context)
+    request_params = params[:submit64Params]
+    resource_class.submit64_get_form_metadata_and_data(request_params)
   end
 
   def self.submit_form(params)

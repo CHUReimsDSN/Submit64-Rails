@@ -39,7 +39,7 @@ module Submit64
       if form_metadata.nil?
         form_metadata = default_form_metadata
       else
-        form_metadata = form_metadata.merge(default_form_metadata)
+        form_metadata = default_form_metadata.merge(form_metadata)
       end
 
       # Filters

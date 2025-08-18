@@ -87,12 +87,12 @@ module Submit64
             form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
             {
               field_name: field_map[:target],
-              form_field_type: form_field_type,
-              form_label: field_map[:label] || self.submit64_beautify_target(field_map[:target]),
-              form_hint: field_map[:hint],
-              form_rules: form_rules,
-              form_select_options: form_select_options,
-              form_css_class: field_map[:css_class],
+              field_type: form_field_type,
+              label: field_map[:label] || self.submit64_beautify_target(field_map[:target]),
+              hint: field_map[:hint],
+              rules: form_rules,
+              select_options: form_select_options,
+              css_class: field_map[:css_class],
             }
           else
             # TODO association select

@@ -19,10 +19,11 @@ module Submit64
       end
 
       # First sructuration
-      form_metadata = {
+      default_form_metadata = {
         sections: [],
         use_model_validations: true,
-        has_global_custom_validation: false
+        has_global_custom_validation: false,
+        css_class: ''
       }
       if self.respond_to?(:submit64_form_builder)
         method_column_builder = self.method(:submit64_form_builder)
@@ -34,6 +35,11 @@ module Submit64
       end
       if context.nil?
         context = {}
+      end
+      if form_metadata.nil?
+        form_metadata = default_form_metadata
+      else
+        form_metadata = form_metadata.merge(default_form_metadata)
       end
 
       # Filters

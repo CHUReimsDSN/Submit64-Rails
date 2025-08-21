@@ -178,11 +178,11 @@ module Submit64
         return rules
       end
 
+      is_value_symbol_and_column = -> (value) { return value.class == Symbol && resource_class.column_names.include?(value.to_s) }
+      is_value_class_not_proc = -> (value) { return value.class != Proc }
+      is_value_class_array = -> (value) { return value.class == Array }
+      get_date_timestamp_value = -> (value) { return value.to_time.to_i }
       self.validators_on(field[:target]).each do |validator|       
-        is_value_symbol_and_column = -> (value) { return value.class == Symbol && resource_class.column_names.include?(value.to_s) }
-        is_value_class_not_proc = -> (value) { return value.class != Proc }
-        is_value_class_array = -> (value) { return value.class == Array }
-        get_date_timestamp_value = -> (value) { return value.to_time.to_i }
         validator_context = validator.options[:on]
         if !validator_context.nil? && validator_context != context_name
           next
@@ -228,7 +228,7 @@ module Submit64
                 in [:greater_than, 'date', true, true]
                   rules << { type: 'greaterThanDate', compare_to: operator_value.to_s }
                 in [:greater_than, 'date', false, true]
-                  rules << { type: 'greaterThanDate', greater_than: get_date_timestamp_value(operator_value) }
+                  rules << { type: 'greaterThanDate', greater_than: get_date_timestamp_value.call(operator_value) }
 
                 in [:greater_than_or_equal_to, 'number', true, false]
                   rules << { type: 'greaterThanOrEqualNumber', compare_to: operator_value.to_s }

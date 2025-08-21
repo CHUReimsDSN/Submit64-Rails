@@ -181,7 +181,7 @@ module Submit64
       is_value_symbol_and_column = -> (value) { return value.class == Symbol && resource_class.column_names.include?(value.to_s) }
       is_value_class_not_proc = -> (value) { return value.class != Proc }
       is_value_class_array = -> (value) { return value.class == Array }
-      get_date_timestamp_value = -> (value) { return value.to_time.to_i }
+      get_date_timestamp_value = -> (value) { return value.to_time(:utc).to_i }
       self.validators_on(field[:target]).each do |validator|       
         validator_context = validator.options[:on]
         if !validator_context.nil? && validator_context != context_name

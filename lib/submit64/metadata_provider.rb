@@ -104,12 +104,12 @@ module Submit64
 
       return {
         form: form_metadata,
-        resource_data: submit64_get_resource_data(form_metadata)
+        resource_data: submit64_get_resource_data(form_metadata, request_params)
       }
     end
 
     private
-    def submit64_get_resource_data(form_metadata)
+    def submit64_get_resource_data(form_metadata, request_params)
       # TODO get resource data, only the field from metadata
       self.find(request_params[:resourceId])
     end

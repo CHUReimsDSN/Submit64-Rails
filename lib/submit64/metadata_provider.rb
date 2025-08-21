@@ -107,16 +107,16 @@ module Submit64
         }
       end
 
-      # TODO get data
       return {
         form: form_metadata,
-        resource_data: self.find(request_params[:resourceId])
+        resource_data: submit64_get_resource_data(form_metadata)
       }
     end
 
     private
     def submit64_get_resource_data(form_metadata)
       # TODO get resource data, only the field from metadata
+      self.find(request_params[:resourceId])
     end
 
     def submit64_get_column_type_by_sql_type(sql_type)
@@ -227,63 +227,60 @@ module Submit64
                   rules << { type: 'greaterThanNumber', compare_to: operator_value.to_s }
                 in [:greater_than, 'number', false, true]
                   rules << { type: 'greaterThanNumber', greater_than: operator_value.to_i }
-                in [:greater_than, 'date', true, false]
+                in [:greater_than, 'date', true, true]
                   rules << { type: 'greaterThanDate', compare_to: operator_value.to_s }
                 in [:greater_than, 'date', false, true]
-                  rules << { type: 'greaterThanDate', greater_than: operator_value.to_i }
+                  rules << { type: 'greaterThanDate', greater_than: operator_value.to_s }
 
                 in [:greater_than_or_equal_to, 'number', true, false]
                   rules << { type: 'greaterThanOrEqualNumber', compare_to: operator_value.to_s }
                 in [:greater_than_or_equal_to, 'number', false, true]
                   rules << { type: 'greaterThanOrEqualNumber', greater_than: operator_value.to_i }
-                in [:greater_than_or_equal_to, 'date', true, false]
+                in [:greater_than_or_equal_to, 'date', true, true]
                   rules << { type: 'greaterThanOrEqualDate', compare_to: operator_value.to_s }
                 in [:greater_than_or_equal_to, 'date', false, true]
-                  rules << { type: 'greaterThanOrEqualDate', greater_than: operator_value.to_i }
+                  rules << { type: 'greaterThanOrEqualDate', greater_than: operator_value.to_s }
 
                 in [:equal_to, 'number', true, false]
                   rules << { type: 'equalToNumber', compare_to: operator_value.to_s }
                 in [:equal_to, 'number', false, true]
                   rules << { type: 'equalToNumber', greater_than: operator_value.to_i }
-                in [:equal_to, 'date', true, false]
+                in [:equal_to, 'date', true, true]
                   rules << { type: 'equalToDate', compare_to: operator_value.to_s }
                 in [:equal_to, 'date', false, true]
-                  rules << { type: 'equalToDate', greater_than: operator_value.to_i }
+                  rules << { type: 'equalToDate', greater_than: operator_value.to_s }
 
                 in [:less_than, 'number', true, false]
                   rules << { type: 'lessThanNumber', compare_to: operator_value.to_s }
                 in [:less_than, 'number', false, true]
                   rules << { type: 'lessThanNumber', greater_than: operator_value.to_i }
-                in [:less_than, 'date', true, false]
+                in [:less_than, 'date', true, true]
                   rules << { type: 'lessThanDate', compare_to: operator_value.to_s }
                 in [:less_than, 'date', false, true]
-                  rules << { type: 'lessThanDate', greater_than: operator_value.to_i }
+                  rules << { type: 'lessThanDate', greater_than: operator_value.to_s }
 
                 in [:less_than_or_equal_to, 'number', true, false]
                   rules << { type: 'lessThanOrEqualNumber', compare_to: operator_value.to_s }
                 in [:less_than_or_equal_to, 'number', false, true]
                   rules << { type: 'lessThanOrEqualNumber', greater_than: operator_value.to_i }
-                in [:less_than_or_equal_to, 'date', true, false]
+                in [:less_than_or_equal_to, 'date', true, true]
                   rules << { type: 'lessThanOrEqualDate', compare_to: operator_value.to_s }
                 in [:less_than_or_equal_to, 'date', false, true]
-                  rules << { type: 'lessThanOrEqualDate', greater_than: operator_value.to_i }
+                  rules << { type: 'lessThanOrEqualDate', greater_than: operator_value.to_s }
 
                 in [:other_than, 'number', true, false]
                   rules << { type: 'otherThanNumber', compare_to: operator_value.to_s }
                 in [:other_than, 'number', false, true]
                   rules << { type: 'otherThanNumber', greater_than: operator_value.to_i }
-                in [:other_than, 'date', true, false]
+                in [:other_than, 'date', true, true]
                   rules << { type: 'otherThanDate', compare_to: operator_value.to_s }
                 in [:other_than, 'date', false, true]
-                  rules << { type: 'otherThanDate', greater_than: operator_value.to_i }
+                  rules << { type: 'otherThanDate', greater_than: operator_value.to_s }
 
-                in [_, _, false, false]
-                  rules << { type: 'backend', backend_hint: "Contrainte métier"}
               end
             end
 
           when "FormatValidator"
-            # TODO à voir à l'avenir ?
             rules << { type: "backend", backend_hint: "Contrainte d'expression régulière" }
 
           when "InclusionValidator"

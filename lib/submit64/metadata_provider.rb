@@ -96,6 +96,15 @@ module Submit64
             }
           else
             # TODO association select
+            # {
+            #   field_name: ,
+            #   field_type: ,
+            #   label: ,
+            #   hint: ,
+            #   rules: ,
+            #   select_options: ,
+            #   css_class: 
+            # }
             {}
           end
         end
@@ -222,7 +231,7 @@ module Submit64
               end
               value_symbol_and_column = is_value_symbol_and_column.call(validator.options[operator_key])
               value_class_not_proc = is_value_class_not_proc.call(validator.options[operator_key])
-              case [operator_key, field_type, value_symbol_and_column, value_class_not_proc]
+              case [operator_key, field_type.to_sym, value_symbol_and_column, value_class_not_proc]
                 in [:greater_than, 'number', true, false]
                   rules << { type: 'greaterThanNumber', compare_to: operator_value.to_s }
                 in [:greater_than, 'number', false, true]

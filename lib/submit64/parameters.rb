@@ -1,8 +1,6 @@
 module Submit64
   @current_user = nil
   @settings = {
-    date_format: '',
-    datetime_format: '',
     always_exclude: [
       :id,
       :created_at,
@@ -14,5 +12,7 @@ module Submit64
 
   class << self
     attr_accessor :current_user
+    attr_accessor :settings
   end
+
 end

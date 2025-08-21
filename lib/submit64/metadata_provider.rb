@@ -160,6 +160,9 @@ module Submit64
         return "selectBelongsto"
       when "HasManyReflection"
         return "selectHasMany"
+      # TODO more case like trought ?
+      else
+        return "???"
       end
     end
 
@@ -179,7 +182,7 @@ module Submit64
         is_value_symbol_and_column = -> (value) { return value.class == Symbol && resource_class.column_names.include?(value.to_s) }
         is_value_class_not_proc = -> (value) { return value.class != Proc }
         is_value_class_array = -> (value) { return value.class == Array }
-
+        get_date_timestamp_value = -> (value) { return value.to_time.to_i }
         validator_context = validator.options[:on]
         if !validator_context.nil? && validator_context != context_name
           next
@@ -225,7 +228,7 @@ module Submit64
                 in [:greater_than, 'date', true, true]
                   rules << { type: 'greaterThanDate', compare_to: operator_value.to_s }
                 in [:greater_than, 'date', false, true]
-                  rules << { type: 'greaterThanDate', greater_than: operator_value.to_s }
+                  rules << { type: 'greaterThanDate', greater_than: get_date_timestamp_value(operator_value) }
 
                 in [:greater_than_or_equal_to, 'number', true, false]
                   rules << { type: 'greaterThanOrEqualNumber', compare_to: operator_value.to_s }
@@ -234,7 +237,7 @@ module Submit64
                 in [:greater_than_or_equal_to, 'date', true, true]
                   rules << { type: 'greaterThanOrEqualDate', compare_to: operator_value.to_s }
                 in [:greater_than_or_equal_to, 'date', false, true]
-                  rules << { type: 'greaterThanOrEqualDate', greater_than: operator_value.to_s }
+                  rules << { type: 'greaterThanOrEqualDate', greater_than: get_date_timestamp_value.call(operator_value) }
 
                 in [:equal_to, 'number', true, false]
                   rules << { type: 'equalToNumber', compare_to: operator_value.to_s }
@@ -243,7 +246,7 @@ module Submit64
                 in [:equal_to, 'date', true, true]
                   rules << { type: 'equalToDate', compare_to: operator_value.to_s }
                 in [:equal_to, 'date', false, true]
-                  rules << { type: 'equalToDate', greater_than: operator_value.to_s }
+                  rules << { type: 'equalToDate', greater_than: get_date_timestamp_value.call(operator_value) }
 
                 in [:less_than, 'number', true, false]
                   rules << { type: 'lessThanNumber', compare_to: operator_value.to_s }
@@ -252,7 +255,7 @@ module Submit64
                 in [:less_than, 'date', true, true]
                   rules << { type: 'lessThanDate', compare_to: operator_value.to_s }
                 in [:less_than, 'date', false, true]
-                  rules << { type: 'lessThanDate', greater_than: operator_value.to_s }
+                  rules << { type: 'lessThanDate', greater_than: get_date_timestamp_value.call(operator_value) }
 
                 in [:less_than_or_equal_to, 'number', true, false]
                   rules << { type: 'lessThanOrEqualNumber', compare_to: operator_value.to_s }
@@ -261,7 +264,7 @@ module Submit64
                 in [:less_than_or_equal_to, 'date', true, true]
                   rules << { type: 'lessThanOrEqualDate', compare_to: operator_value.to_s }
                 in [:less_than_or_equal_to, 'date', false, true]
-                  rules << { type: 'lessThanOrEqualDate', greater_than: operator_value.to_s }
+                  rules << { type: 'lessThanOrEqualDate', greater_than: get_date_timestamp_value.call(operator_value) }
 
                 in [:other_than, 'number', true, false]
                   rules << { type: 'otherThanNumber', compare_to: operator_value.to_s }
@@ -270,7 +273,7 @@ module Submit64
                 in [:other_than, 'date', true, true]
                   rules << { type: 'otherThanDate', compare_to: operator_value.to_s }
                 in [:other_than, 'date', false, true]
-                  rules << { type: 'otherThanDate', greater_than: operator_value.to_s }
+                  rules << { type: 'otherThanDate', greater_than: get_date_timestamp_value.call(operator_value) }
 
               end
             end

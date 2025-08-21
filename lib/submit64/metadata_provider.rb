@@ -80,33 +80,19 @@ module Submit64
       # Projection
       form_metadata[:sections] = form_metadata[:sections].map do |section_map|
         fields = section_map[:fields].map do |field_map|
-          if !self.columns_hash[field_map[:target].to_s].nil?
-            field_type = self.submit64_get_column_type_by_sql_type(columns_hash[field_map[:target].to_s].type)
-            form_field_type = self.submit64_get_form_field_type_by_column_name(field_map, field_type)
-            form_rules = self.submit64_get_column_rules(field_map, field_type, form_metadata, context[:name])
-            form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
-            {
-              field_name: field_map[:target],
-              field_type: form_field_type,
-              label: field_map[:label] || self.submit64_beautify_target(field_map[:target]),
-              hint: field_map[:hint],
-              rules: form_rules,
-              select_options: form_select_options,
-              css_class: field_map[:css_class],
-            }
-          else
-            # TODO association select
-            # {
-            #   field_name: ,
-            #   field_type: ,
-            #   label: ,
-            #   hint: ,
-            #   rules: ,
-            #   select_options: ,
-            #   css_class: 
-            # }
-            {}
-          end
+          field_type = self.submit64_get_column_type_by_sql_type(columns_hash[field_map[:target].to_s].type)
+          form_field_type = self.submit64_get_form_field_type_by_column_name(field_map, field_type)
+          form_rules = self.submit64_get_column_rules(field_map, field_type, form_metadata, context[:name])
+          form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
+          {
+            field_name: field_map[:target],
+            field_type: form_field_type,
+            label: field_map[:label] || self.submit64_beautify_target(field_map[:target]),
+            hint: field_map[:hint],
+            rules: form_rules,
+            select_options: form_select_options,
+            css_class: field_map[:css_class],
+          }
         end
         {
           fields: fields,
@@ -231,7 +217,7 @@ module Submit64
               end
               value_symbol_and_column = is_value_symbol_and_column.call(validator.options[operator_key])
               value_class_not_proc = is_value_class_not_proc.call(validator.options[operator_key])
-              case [operator_key, field_type.to_sym, value_symbol_and_column, value_class_not_proc]
+              case [operator_key, field_type.to_s, value_symbol_and_column, value_class_not_proc]
                 in [:greater_than, 'number', true, false]
                   rules << { type: 'greaterThanNumber', compare_to: operator_value.to_s }
                 in [:greater_than, 'number', false, true]
@@ -365,6 +351,8 @@ module Submit64
 
           when "BlockValidator"
             rules << { type: "backend", backend_hint: "Contrainte spécifique" }
+          else
+            next
         end
       end
       return rules
@@ -374,7 +362,7 @@ module Submit64
       if !field_def[:select_options].nil? && !field_def[:select_options].empty?
         if field_def[:select_options].first.class == 'string'
           return field_def[:select_options].map do |select_option_map|
-            return {
+            {
               label: select_option_map,
               value: select_option_map,
             }
@@ -387,7 +375,7 @@ module Submit64
       defined_enum = self.defined_enums[column_name.to_s]
       if !defined_enum.nil?
         return defined_enum.keys.map do |enum_key_map|
-          return {
+          {
             label: enum_key_map,
             value: enum_key_map
           }          

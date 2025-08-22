@@ -168,7 +168,7 @@ module Submit64
     def submit64_get_form_field_type_by_association(association)
       case association.class.to_s.demodulize
       when "BelongsToReflection"
-        return "selectBelongsto"
+        return "selectBelongsTo"
       when "HasManyReflection"
         return "selectHasMany"
       # TODO more case like trought ?

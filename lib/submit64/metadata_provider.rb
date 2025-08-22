@@ -180,7 +180,7 @@ module Submit64
         return rules
       end
 
-      is_value_symbol_and_column = -> (value) { return value.class == Symbol && resource_class.column_names.include?(value.to_s) }
+      is_value_symbol_and_column = -> (value) { return value.class == Symbol && column_names.include?(value.to_s) }
       is_value_class_not_proc = -> (value) { return value.class != Proc }
       is_value_class_array = -> (value) { return value.class == Array }
       get_date_to_iso_8601 = -> (value) { return value.as_json }

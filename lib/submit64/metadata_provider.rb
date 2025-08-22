@@ -82,19 +82,28 @@ module Submit64
       # Projection
       form_metadata[:sections] = form_metadata[:sections].map do |section_map|
         fields = section_map[:fields].map do |field_map|
-          field_type = self.submit64_get_column_type_by_sql_type(columns_hash[field_map[:target].to_s].type)
-          form_field_type = self.submit64_get_form_field_type_by_column_name(field_map, field_type)
-          form_rules = self.submit64_get_column_rules(field_map, field_type, form_metadata, context[:name])
-          form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
-          {
-            field_name: field_map[:target],
-            field_type: form_field_type,
-            label: field_map[:label] || self.submit64_beautify_target(field_map[:target]),
-            hint: field_map[:hint],
-            rules: form_rules,
-            select_options: form_select_options,
-            css_class: field_map[:css_class],
-          }
+          association = self.reflect_on_association(field_map[:target])
+          if association.nil?
+            field_type = self.submit64_get_column_type_by_sgbd_type(columns_hash[field_map[:target].to_s].type)
+            form_field_type = self.submit64_get_form_field_type_by_column_type(field_type)
+            form_rules = self.submit64_get_column_rules(field_map, field_type, form_metadata, context[:name])
+            form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
+          else
+            form_field_type = self.submit64_get_form_field_type_by_association(association)
+            column_name = association.foreign_key
+            field_type = self.submit64_get_column_type_by_sgbd_type(columns_hash[column_name.to_s].type)
+            form_rules = self.submit64_get_column_rules(field_map, field_type, form_metadata, context[:name])
+            form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
+          end
+            {
+              field_name: field_map[:target],
+              field_type: form_field_type,
+              label: field_map[:label] || self.submit64_beautify_target(field_map[:target]),
+              hint: field_map[:hint],
+              rules: form_rules,
+              select_options: form_select_options,
+              css_class: field_map[:css_class],
+            }
         end
         {
           fields: fields,
@@ -112,11 +121,11 @@ module Submit64
 
     private
     def submit64_get_resource_data(form_metadata, request_params)
-      # TODO get resource data, only the field from metadata
+      # TODO get resource data, only the field from metadata?
       self.find(request_params[:resourceId])
     end
 
-    def submit64_get_column_type_by_sql_type(sql_type)
+    def submit64_get_column_type_by_sgbd_type(sql_type)
       field_type = 'string'
       case sql_type
         when :text
@@ -135,28 +144,28 @@ module Submit64
       field_type.to_sym
     end
 
-    def submit64_get_form_field_type_by_column_name(field, field_type)
-      association = self.reflect_on_association(field[:target])
-      if association.nil?
-        case field_type.to_s
-        when "text"
-          return "text"
-        when "string"
-          return "string"
-        when "number"
-          return "number"
-        when "date"
-          return "date"
-        when "datetime"
-          return "datetime"
-        when "boolean"
-          return "checkbox"
-        when "object"
-          return "object"
-        else
-          return "string"
-        end
+    def submit64_get_form_field_type_by_column_type(column_type)
+      case column_type.to_s
+      when "text"
+        return "text"
+      when "string"
+        return "string"
+      when "number"
+        return "number"
+      when "date"
+        return "date"
+      when "datetime"
+        return "datetime"
+      when "boolean"
+        return "checkbox"
+      when "object"
+        return "object"
+      else
+        return "string"
       end
+    end
+
+    def submit64_get_form_field_type_by_association(association)
       case association.class.to_s.demodulize
       when "BelongsToReflection"
         return "selectBelongsto"

@@ -192,7 +192,7 @@ module Submit64
         end
         {
           label: label,
-          value: row.method(self.primary_key.to_sym)
+          value: row[self.primary_key.to_sym]
         }
       end
 

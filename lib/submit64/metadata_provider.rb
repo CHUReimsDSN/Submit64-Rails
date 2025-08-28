@@ -27,7 +27,7 @@ module Submit64
         has_global_custom_validation: false,
         backend_date_format: 'YYYY-MM-DD',
         bakcend_datetime_format: 'YYYY-MM-DDTHH:MM:SSZ',
-        resource_name: self.class.to_s,
+        resource_name: self.to_s,
         css_class: ''
       }
       if self.respond_to?(:submit64_form_builder)

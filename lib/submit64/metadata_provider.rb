@@ -159,7 +159,6 @@ module Submit64
       end
       label_filter = request_params[:labelFilter]
       if label_filter
-        label_filter = label_filter.to
         columns_filter = [:label]
         if self.respond_to?(:submit64_association_filter_columns)
           filter_column_method = self.method(:submit64_association_filter_columns)

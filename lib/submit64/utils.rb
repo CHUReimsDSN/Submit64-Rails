@@ -10,6 +10,19 @@ module Submit64
     )
   end
 
+  def self.permit_association_data_params(params)
+    params.permit(
+      submit64Params: [
+        :resourceName,
+        :associationName,
+        :labelFilter,
+        :limit,
+        :offset,
+        context: {}
+      ]
+    )
+  end
+
   def self.get_association_data_pagination_limit
     50
   end

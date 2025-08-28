@@ -159,7 +159,7 @@ module Submit64
       end
       label_filter = request_params[:labelFilter]
       if !label_filter.empty?
-        # TODO debug
+        # TODO debug, returning empty list
         columns_filter = [:label]
         if self.respond_to?(:submit64_association_filter_columns)
           filter_column_method = self.method(:submit64_association_filter_columns)
@@ -192,7 +192,7 @@ module Submit64
         end
         {
           label: label,
-          value: row.method(row.primary_key.to_sym)
+          value: row.method(self.primary_key.to_sym)
         }
       end
 

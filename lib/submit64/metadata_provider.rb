@@ -16,6 +16,8 @@ module Submit64
       context = request_params[:context]
       if context != nil
         context = context.to_h
+      else
+        context = {}
       end
 
       # First sructuration
@@ -25,6 +27,7 @@ module Submit64
         has_global_custom_validation: false,
         backend_date_format: 'YYYY-MM-DD',
         bakcend_datetime_format: 'YYYY-MM-DDTHH:MM:SSZ',
+        resource_name: self.class.to_s,
         css_class: ''
       }
       if self.respond_to?(:submit64_form_builder)
@@ -34,9 +37,6 @@ module Submit64
         else
           form_metadata = method_column_builder.call
         end
-      end
-      if context.nil?
-        context = {}
       end
       if form_metadata.nil?
         form_metadata = default_form_metadata
@@ -88,17 +88,24 @@ module Submit64
             form_field_type = self.submit64_get_form_field_type_by_column_type(field_type)
             form_rules = self.submit64_get_column_rules(field_map, field_type, form_metadata, context[:name])
             form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
+            field_name = field_map[:target]
+            field_association_name = nil
+            field_association_class = nil
           else
+            field_name =  association.foreign_key
             form_field_type = self.submit64_get_form_field_type_by_association(association)
-            column_name = association.foreign_key
-            field_type = self.submit64_get_column_type_by_sgbd_type(columns_hash[column_name.to_s].type)
+            field_type = self.submit64_get_column_type_by_sgbd_type(columns_hash[field_name.to_s].type)
             form_rules = self.submit64_get_column_rules(field_map, field_type, form_metadata, context[:name])
             form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
+            field_association_name = association.name
+            field_association_class = association.klass.to_s
           end
             {
-              field_name: field_map[:target],
+              field_name: field_name,
               field_type: form_field_type,
               label: field_map[:label] || self.submit64_beautify_target(field_map[:target]),
+              field_association_name: field_association_name,
+              field_association_class: field_association_class,
               hint: field_map[:hint],
               rules: form_rules,
               select_options: form_select_options,
@@ -116,6 +123,82 @@ module Submit64
       return {
         form: form_metadata,
         resource_data: submit64_get_resource_data(form_metadata, request_params)
+      }
+    end
+
+    def submit64_get_association_data(request_params)     
+      unless self < ActiveRecord::Base
+        raise "Method must be called from ActiveRecord::Base inherited class"
+      end 
+      context = request_params[:context]
+      if context != nil
+        context = context.to_h
+      else
+        context = {}
+      end
+      association = self.reflect_on_association(request_params[:associationName])
+      if association.nil?
+        raise Submit64Exception.new("Association not found : #{request_params[:associationName]}", 400)
+      end
+
+      association_class = association.klass
+      default_limit = Submit64.get_association_data_pagination_limit
+      limit = request_params[:limit] || default_limit
+      if limit > default_limit
+        limit = default_limit
+      end
+      offset = request_params[:offset] || 0
+      builder_rows = association_class.all
+      if self.respond_to?(:submit64_association_filter_rows)
+        filter_row_method = self.method(:submit64_association_filter_rows)
+        if filter_row_method.parameters.any?
+          builder_rows = filter_row_method.call(context)
+        else
+          builder_rows = filter_row_method.call
+        end
+      end
+      label_filter = request_params[:labelFilter]
+      if label_filter
+        label_filter = label_filter.to
+        columns_filter = [:label]
+        if self.respond_to?(:submit64_association_filter_columns)
+          filter_column_method = self.method(:submit64_association_filter_columns)
+          if filter_column_method.parameters.any?
+            columns_filter = filter_column_method.call(context)
+          else
+            columns_filter = filter_column_method.call
+          end
+        end
+        label_filter_builder = builder_rows.none
+        columns_filter.each do |column_filter|
+          if self.columns_hash[column_filter.to_s].nil?
+            next
+          end
+          builder_statement = self.where("#{column_filter.to_s} ILIKE ?", label_filter)
+          label_filter_builder = label_filter_builder.or(builder_statement)
+        end
+        builder_rows = builder_rows.and(label_filter_builder)
+      end
+      builder_row_count = builder_rows.count
+      builder_rows = builder_rows.limit(limit).offset(offset).map do |row|
+        label = submit64_association_default_label(row)
+        if row.respond_to?(:submit64_association_label)
+          label_method = row.method(:submit64_association_label)
+          if label_method.parameters.any?
+            label = row.method(:submit64_association_label).call(context)
+          else
+            label = row.method(:submit64_association_label).call
+          end
+        end
+        {
+          label: label,
+          value: row.method(row.primary_key.to_sym)
+        }
+      end
+
+      return {
+        rows: builder_rows,
+        row_count: builder_row_count
       }
     end
 
@@ -401,6 +484,19 @@ module Submit64
 
     def submit64_beautify_target(target)
       return target.to_s.capitalize.gsub('_', ' ')
+    end
+
+    def submit64_association_default_label(row)
+      if row.respond_to?(:label)
+        return row.method(:label).call
+      end
+      if row.respond_to?(:to_string)
+        return row.method(:to_string).call
+      end
+      if row.respond_to?(:to_s)
+        return row.method(:to_s).call
+      end
+      return row.method(self.primary_key.to_sym).call
     end
 
   end

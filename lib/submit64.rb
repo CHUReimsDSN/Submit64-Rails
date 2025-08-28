@@ -25,12 +25,25 @@ module Submit64
     resource_class.submit64_get_form_metadata_and_data(request_params)
   end
 
-  def self.submit_form(params)
-    # TODO
+  def self.get_association_data(params)
+    if !params[:submit64Params]
+      raise Submit64Exception.new("Invalid params", 400)
+    end
+    resource_name = params[:submit64Params][:resourceName]
+    begin
+      resource_class = resource_name.constantize
+    rescue Exception
+      raise Submit64Exception.new("This resource does not exist : #{resource_name}", 400)
+    end
+    if !resource_class.singleton_class.ancestors.include?(Submit64::MetadataProvider)
+      raise Submit64Exception.new("This resource does not extend Submit64 : #{resource_name}", 400)
+    end
+    request_params = params[:submit64Params]
+    resource_class.submit64_get_association_data(request_params)
   end
 
-  def self.todo
-    # TODO paginated resource for select association ?
+  def self.submit_form(params)
+    # TODO
   end
 
 end

@@ -24,7 +24,7 @@ module Submit64
   end
 
   def self.get_association_data_pagination_limit
-    50
+    20
   end
 
 end

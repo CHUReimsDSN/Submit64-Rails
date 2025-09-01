@@ -30,14 +30,7 @@ module Submit64
         resource_name: self.to_s,
         css_class: ''
       }
-      if self.respond_to?(:submit64_form_builder)
-        method_column_builder = self.method(:submit64_form_builder)
-        if method_column_builder.parameters.any?
-          form_metadata = method_column_builder.call(context)
-        else
-          form_metadata = method_column_builder.call
-        end
-      end
+      form_metadata = submit64_try_model_method_with_context(:submit64_form_builder, context)
       if form_metadata.nil?
         form_metadata = default_form_metadata
       else
@@ -120,13 +113,15 @@ module Submit64
         }
       end
 
+      resource_data, form_metadata = submit64_get_resource_data(form_metadata, request_params, context)
+
       return {
         form: form_metadata,
-        resource_data: submit64_get_resource_data(form_metadata, request_params)
+        resource_data: resource_data
       }
     end
 
-    def submit64_get_association_data(request_params)     
+    def submit64_get_association_data(request_params)
       unless self < ActiveRecord::Base
         raise "Method must be called from ActiveRecord::Base inherited class"
       end 
@@ -148,26 +143,23 @@ module Submit64
         limit = default_limit
       end
       offset = request_params[:offset] || 0
-      builder_rows = association_class.all
-      if self.respond_to?(:submit64_association_filter_rows)
-        filter_row_method = self.method(:submit64_association_filter_rows)
-        if filter_row_method.parameters.any?
-          builder_rows = filter_row_method.call(context)
-        else
-          builder_rows = filter_row_method.call
-        end
+      custom_select_column = submit64_try_model_method_with_context(:submit64_association_select_columns, context)
+      if custom_select_column != nil
+        builder_rows = association_class.select(custom_select_column).all
+      else
+        builder_rows = association_class.all
+      end
+      custom_builder_row_filter = submit64_try_model_method_with_context(:submit64_association_filter_rows, context)
+      if custom_builder_row_filter != nil
+        builder_rows = builder_rows.and(custom_builder_row_filter)
       end
       label_filter = request_params[:labelFilter]
       if !label_filter.empty?
         # TODO debug, returning empty list
-        columns_filter = [:label]
-        if self.respond_to?(:submit64_association_filter_columns)
-          filter_column_method = self.method(:submit64_association_filter_columns)
-          if filter_column_method.parameters.any?
-            columns_filter = filter_column_method.call(context)
-          else
-            columns_filter = filter_column_method.call
-          end
+        columns_filter = [:label, :id]
+        custom_columns_filter = submit64_try_model_method_with_context(:submit64_association_filter_columns, context)
+        if custom_columns_filter != nil
+          columns_filter = custom_columns_filter
         end
         label_filter_builder = builder_rows.none
         columns_filter.each do |column_filter|
@@ -182,13 +174,9 @@ module Submit64
       builder_row_count = builder_rows.count
       builder_rows = builder_rows.limit(limit).offset(offset).map do |row|
         label = submit64_association_default_label(row)
-        if row.respond_to?(:submit64_association_label)
-          label_method = row.method(:submit64_association_label)
-          if label_method.parameters.any?
-            label = row.method(:submit64_association_label).call(context)
-          else
-            label = row.method(:submit64_association_label).call
-          end
+        custom_label = submit64_try_row_method_with_context(row, :submit64_association_label, context)
+        if custom_label != nil
+          label = custom_label
         end
         {
           label: label,
@@ -203,9 +191,37 @@ module Submit64
     end
 
     private
-    def submit64_get_resource_data(form_metadata, request_params)
-      # TODO get resource data, only the field from metadata?
-      self.find(request_params[:resourceId])
+    def submit64_get_resource_data(form_metadata, request_params, context)
+      relations_to_include = []
+      columns_to_select = []
+      form_metadata[:sections].each do |section|
+        section[:fields].each do |field|
+          if field[:field_association_name] != nil
+            relations_to_include << field[:field_association_name]
+          end
+          columns_to_select << field[:field_name]
+        end
+      end
+      resource_data = self.all
+        .select(columns_to_select)
+        .includes(relations_to_include)
+        .where({self.primary_key.to_sym => request_params[:resourceId]})
+        .first
+
+      form_metadata[:sections].each do |section|
+        section[:fields].each do |field|
+          relation = relations_to_include.find do |relation_name_find|
+            relation_name_find == field[:field_association_name]
+          end
+          if relation.nil?
+            next
+          end
+          row = resource_data.method(relation).call
+          field[:default_display_value] = submit64_try_row_method_with_context(row, :submit64_association_label, context)
+        end
+      end
+      resource_data_final = resource_data.as_json
+      return resource_data_final, form_metadata
     end
 
     def submit64_get_column_type_by_sgbd_type(sql_type)
@@ -252,8 +268,8 @@ module Submit64
       case association.class.to_s.demodulize
       when "BelongsToReflection"
         return "selectBelongsTo"
-      when "HasManyReflection"
-        return "selectHasMany"
+      # when "HasManyReflection"
+      #   return "selectHasMany"
       # TODO more case like trought ?
       else
         return "???"
@@ -497,6 +513,30 @@ module Submit64
         return row.method(:to_s).call
       end
       return row.method(self.primary_key.to_sym).call
+    end
+
+    def submit64_try_model_method_with_context(method_name, context)
+      if self.respond_to?(method_name)
+        method_found = self.method(method_name)
+        if method_found.parameters.any?
+          return method_found.call(context)
+        else
+          return method_found.call
+        end
+      end
+      return nil
+    end
+
+    def submit64_try_row_method_with_context(row, method_name, context)
+      if row.respond_to?(method_name)
+        method_found = row.method(method_name)
+        if method_found.parameters.any?
+          return method_found.call(context)
+        else
+          return method_found.call
+        end
+      end
+      return nil
     end
 
   end

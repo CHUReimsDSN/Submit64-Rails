@@ -175,12 +175,12 @@ module Submit64
         if custom_columns_filter != nil
           columns_filter = custom_columns_filter
         end
-        label_filter_builder = builder_rows
+        label_filter_builder = builder_rows.none
         columns_filter.each do |column_filter|
           if self.columns_hash[column_filter.to_s].nil?
             next
           end
-          builder_statement = self.where("#{column_filter.to_s}::text ILIKE ?", label_filter)
+          builder_statement = self.where("#{self.table_name}.#{column_filter.to_s}::text ILIKE ?", label_filter)
           label_filter_builder = label_filter_builder.or(builder_statement)
         end
         builder_rows = builder_rows.and(label_filter_builder)

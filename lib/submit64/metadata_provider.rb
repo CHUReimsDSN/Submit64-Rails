@@ -78,8 +78,8 @@ module Submit64
             field_index_to_purge << index_field
           end
         end
-        section[:fields] = section[:fields].select do |field, index_field|
-          field_index_to_purge.exclude?(index_field)
+        section[:fields] = section[:fields].select do |field, index_select|
+          field_index_to_purge.exclude?(index_select)
         end
       end
       form_metadata[:sections] = form_metadata[:sections].select do |section, index_section|

@@ -30,7 +30,7 @@ module Submit64
         resource_name: self.to_s,
         css_class: ''
       }
-      form_metadata = submit64_try_model_method_with_context(:submit64_form_builder, context)
+      form_metadata = submit64_try_model_method_with_context(self, :submit64_form_builder, context)
       if form_metadata.nil?
         form_metadata = default_form_metadata
       else
@@ -157,21 +157,20 @@ module Submit64
         limit = default_limit
       end
       offset = request_params[:offset] || 0
-      custom_select_column = submit64_try_model_method_with_context(:submit64_association_select_columns, context)
+      custom_select_column = submit64_try_model_method_with_context(association_class, :submit64_association_select_columns, context)
       if custom_select_column != nil
         builder_rows = association_class.select(custom_select_column).all
       else
         builder_rows = association_class.all
       end
-      custom_builder_row_filter = submit64_try_model_method_with_context(:submit64_association_filter_rows, context)
+      custom_builder_row_filter = submit64_try_model_method_with_context(association_class, :submit64_association_filter_rows, context)
       if custom_builder_row_filter != nil
         builder_rows = builder_rows.and(custom_builder_row_filter)
       end
       label_filter = request_params[:labelFilter]
       if !label_filter.empty?
-        # TODO debug, returning empty list
         columns_filter = [:label, :id]
-        custom_columns_filter = submit64_try_model_method_with_context(:submit64_association_filter_columns, context)
+        custom_columns_filter = submit64_try_model_method_with_context(association_class, :submit64_association_filter_columns, context)
         if custom_columns_filter != nil
           columns_filter = custom_columns_filter
         end
@@ -205,7 +204,6 @@ module Submit64
     end
 
     private
-
     def submit64_get_resource_data(form_metadata, request_params, context)
       relations_to_include = []
       columns_to_select = []
@@ -540,9 +538,9 @@ module Submit64
       row.method(self.primary_key.to_sym).call
     end
 
-    def submit64_try_model_method_with_context(method_name, context)
-      if self.respond_to?(method_name)
-        method_found = self.method(method_name)
+    def submit64_try_model_method_with_context(class_model, method_name, context)
+      if class_model.respond_to?(method_name)
+        method_found = class_model.method(method_name)
         if method_found.parameters.any?
           return method_found.call(context)
         else

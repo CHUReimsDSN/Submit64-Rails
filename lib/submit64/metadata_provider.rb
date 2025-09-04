@@ -1,7 +1,7 @@
 require 'active_record'
 
 module Submit64
-        
+
   module MetadataProvider
     def self.extended(base)
       unless base < ActiveRecord::Base
@@ -26,7 +26,7 @@ module Submit64
         use_model_validations: true,
         has_global_custom_validation: false,
         backend_date_format: 'YYYY-MM-DD',
-        bakcend_datetime_format: 'YYYY-MM-DDTHH:MM:SSZ',
+        backend_datetime_format: 'YYYY-MM-DDTHH:MM:SSZ',
         resource_name: self.to_s,
         css_class: ''
       }
@@ -36,6 +36,20 @@ module Submit64
       else
         form_metadata = default_form_metadata.merge(form_metadata)
       end
+
+      # Early projection for lazy definition
+      form_metadata[:sections].each do |section_each|
+        section_each[:fields] = section_each[:fields].map do |field_map|
+          if field_map.class == Symbol
+            {
+              target: field_map
+            }
+          else
+            field_map
+          end
+        end
+      end
+
 
       # Filters
       section_index_to_purge = []
@@ -58,13 +72,13 @@ module Submit64
           end
           if !field[:target].nil?
             if self.columns_hash[field[:target].to_s].nil? && self.reflect_on_association(field[:target]).nil?
-              field_index_to_purge << index_field              
+              field_index_to_purge << index_field
             end
           else
             field_index_to_purge << index_field
           end
         end
-        section[:fields] = section[:fields].select do |field, index_field|
+        section[:fields] = section[:fields].select do |_field, index_field|
           field_index_to_purge.exclude?(index_field)
         end
       end
@@ -85,7 +99,7 @@ module Submit64
             field_association_name = nil
             field_association_class = nil
           else
-            field_name =  association.foreign_key
+            field_name = association.foreign_key
             form_field_type = self.submit64_get_form_field_type_by_association(association)
             field_type = self.submit64_get_column_type_by_sgbd_type(columns_hash[field_name.to_s].type)
             form_rules = self.submit64_get_column_rules(field_map, field_type, form_metadata, context[:name])
@@ -93,17 +107,17 @@ module Submit64
             field_association_name = association.name
             field_association_class = association.klass.to_s
           end
-            {
-              field_name: field_name,
-              field_type: form_field_type,
-              label: field_map[:label] || self.submit64_beautify_target(field_map[:target]),
-              field_association_name: field_association_name,
-              field_association_class: field_association_class,
-              hint: field_map[:hint],
-              rules: form_rules,
-              select_options: form_select_options,
-              css_class: field_map[:css_class],
-            }
+          {
+            field_name: field_name,
+            field_type: form_field_type,
+            label: field_map[:label] || self.submit64_beautify_target(field_map[:target]),
+            field_association_name: field_association_name,
+            field_association_class: field_association_class,
+            hint: field_map[:hint],
+            rules: form_rules,
+            select_options: form_select_options,
+            css_class: field_map[:css_class],
+          }
         end
         {
           fields: fields,
@@ -115,7 +129,7 @@ module Submit64
 
       resource_data, form_metadata = submit64_get_resource_data(form_metadata, request_params, context)
 
-      return {
+      {
         form: form_metadata,
         resource_data: resource_data
       }
@@ -124,7 +138,7 @@ module Submit64
     def submit64_get_association_data(request_params)
       unless self < ActiveRecord::Base
         raise "Method must be called from ActiveRecord::Base inherited class"
-      end 
+      end
       context = request_params[:context]
       if context != nil
         context = context.to_h
@@ -184,13 +198,14 @@ module Submit64
         }
       end
 
-      return {
+      {
         rows: builder_rows,
         row_count: builder_row_count
       }
     end
 
     private
+
     def submit64_get_resource_data(form_metadata, request_params, context)
       relations_to_include = []
       columns_to_select = []
@@ -203,10 +218,10 @@ module Submit64
         end
       end
       resource_data = self.all
-        .select(columns_to_select)
-        .includes(relations_to_include)
-        .where({self.primary_key.to_sym => request_params[:resourceId]})
-        .first
+                          .select(columns_to_select)
+                          .includes(relations_to_include)
+                          .where({ self.primary_key.to_sym => request_params[:resourceId] })
+                          .first
 
       form_metadata[:sections].each do |section|
         section[:fields].each do |field|
@@ -226,24 +241,25 @@ module Submit64
         end
       end
       resource_data_final = resource_data.as_json
-      return resource_data_final, form_metadata
+      [resource_data_final, form_metadata]
     end
 
     def submit64_get_column_type_by_sgbd_type(sql_type)
-      field_type = 'string'
       case sql_type
-        when :text
-          field_type = 'text'
-        when :integer
-          field_type = 'number'
-        when :date
-          field_type = 'date'
-        when :datetime
-          field_type = 'datetime'
-        when :boolean
-          field_type = 'boolean'
-        when :jsonb
-          field_type = 'object'
+      when :text
+        field_type = 'text'
+      when :integer
+        field_type = 'number'
+      when :date
+        field_type = 'date'
+      when :datetime
+        field_type = 'datetime'
+      when :boolean
+        field_type = 'boolean'
+      when :jsonb
+        field_type = 'object'
+      else
+        field_type = 'string'
       end
       field_type.to_sym
     end
@@ -273,9 +289,8 @@ module Submit64
       case association.class.to_s.demodulize
       when "BelongsToReflection"
         return "selectBelongsTo"
-      # when "HasManyReflection"
-      #   return "selectHasMany"
-      # TODO more case like trought ?
+        # when "HasManyReflection"
+        #   return "selectHasMany"
       else
         return "???"
       end
@@ -297,7 +312,7 @@ module Submit64
       is_value_class_not_proc = -> (value) { return value.class != Proc }
       is_value_class_array = -> (value) { return value.class == Array }
       get_date_to_iso_8601 = -> (value) { return value.as_json }
-      self.validators_on(field[:target]).each do |validator|       
+      self.validators_on(field[:target]).each do |validator|
         validator_context = validator.options[:on]
         if !validator_context.nil? && validator_context != context_name
           next
@@ -313,167 +328,172 @@ module Submit64
         end
 
         if validator.options[:allow_blank].present?
-          rules <  { type: 'allowBlank' }
+          rules < { type: 'allowBlank' }
         end
 
         case validator.class.name.demodulize
-          when "AbsenceValidator"
-            rules << { type: "absence" }
+        when "AbsenceValidator"
+          rules << { type: "absence" }
 
-          when "AcceptanceValidator"
-            rules <<  { type: "acceptance" }
+        when "AcceptanceValidator"
+          rules << { type: "acceptance" }
 
-          when "ConfirmationValidator"
-            next # useless, too much MVC-ish, use comarison instead
+        when "ConfirmationValidator"
+          next # useless, too much MVC-ish, use comparison instead
 
-          when "ComparisonValidator"
-            operators = [:greater_than, :greater_than_or_equal_to, :equal_to, :less_than, :less_than_or_equal_to, :other_than]
-            operators.each do |operator_key|
-              operator_value = validator.options[operator_key]
-              if (operator_value.nil?)
-                next
-              end
-              value_symbol_and_column = is_value_symbol_and_column.call(validator.options[operator_key])
-              value_class_not_proc = is_value_class_not_proc.call(validator.options[operator_key])
-              case [operator_key, field_type.to_s, value_symbol_and_column, value_class_not_proc]
-                in [:greater_than, 'number', true, false]
-                  rules << { type: 'greaterThanNumber', compare_to: operator_value.to_s }
-                in [:greater_than, 'number', false, true]
-                  rules << { type: 'greaterThanNumber', greater_than: operator_value.to_i }
-                in [:greater_than, 'date', true, true]
-                  rules << { type: 'greaterThanDate', compare_to: operator_value.to_s }
-                in [:greater_than, 'date', false, true]
-                  rules << { type: 'greaterThanDate', greater_than: get_date_to_iso_8601.call(operator_value) }
-
-                in [:greater_than_or_equal_to, 'number', true, false]
-                  rules << { type: 'greaterThanOrEqualNumber', compare_to: operator_value.to_s }
-                in [:greater_than_or_equal_to, 'number', false, true]
-                  rules << { type: 'greaterThanOrEqualNumber', greater_than: operator_value.to_i }
-                in [:greater_than_or_equal_to, 'date', true, true]
-                  rules << { type: 'greaterThanOrEqualDate', compare_to: operator_value.to_s }
-                in [:greater_than_or_equal_to, 'date', false, true]
-                  rules << { type: 'greaterThanOrEqualDate', greater_than: get_date_to_iso_8601.call(operator_value) }
-
-                in [:equal_to, 'number', true, false]
-                  rules << { type: 'equalToNumber', compare_to: operator_value.to_s }
-                in [:equal_to, 'number', false, true]
-                  rules << { type: 'equalToNumber', greater_than: operator_value.to_i }
-                in [:equal_to, 'date', true, true]
-                  rules << { type: 'equalToDate', compare_to: operator_value.to_s }
-                in [:equal_to, 'date', false, true]
-                  rules << { type: 'equalToDate', greater_than: get_date_to_iso_8601.call(operator_value) }
-
-                in [:less_than, 'number', true, false]
-                  rules << { type: 'lessThanNumber', compare_to: operator_value.to_s }
-                in [:less_than, 'number', false, true]
-                  rules << { type: 'lessThanNumber', greater_than: operator_value.to_i }
-                in [:less_than, 'date', true, true]
-                  rules << { type: 'lessThanDate', compare_to: operator_value.to_s }
-                in [:less_than, 'date', false, true]
-                  rules << { type: 'lessThanDate', greater_than: get_date_to_iso_8601.call(operator_value) }
-
-                in [:less_than_or_equal_to, 'number', true, false]
-                  rules << { type: 'lessThanOrEqualNumber', compare_to: operator_value.to_s }
-                in [:less_than_or_equal_to, 'number', false, true]
-                  rules << { type: 'lessThanOrEqualNumber', greater_than: operator_value.to_i }
-                in [:less_than_or_equal_to, 'date', true, true]
-                  rules << { type: 'lessThanOrEqualDate', compare_to: operator_value.to_s }
-                in [:less_than_or_equal_to, 'date', false, true]
-                  rules << { type: 'lessThanOrEqualDate', greater_than: get_date_to_iso_8601.call(operator_value) }
-
-                in [:other_than, 'number', true, false]
-                  rules << { type: 'otherThanNumber', compare_to: operator_value.to_s }
-                in [:other_than, 'number', false, true]
-                  rules << { type: 'otherThanNumber', greater_than: operator_value.to_i }
-                in [:other_than, 'date', true, true]
-                  rules << { type: 'otherThanDate', compare_to: operator_value.to_s }
-                in [:other_than, 'date', false, true]
-                  rules << { type: 'otherThanDate', greater_than: get_date_to_iso_8601.call(operator_value) }
-
-              end
+        when "ComparisonValidator"
+          operators = [:greater_than, :greater_than_or_equal_to, :equal_to, :less_than, :less_than_or_equal_to, :other_than]
+          operators.each do |operator_key|
+            operator_value = validator.options[operator_key]
+            if operator_value.nil?
+              next
             end
+            value_symbol_and_column = is_value_symbol_and_column.call(validator.options[operator_key])
+            value_class_not_proc = is_value_class_not_proc.call(validator.options[operator_key])
+            case [operator_key, field_type.to_s, value_symbol_and_column, value_class_not_proc]
+            in [:greater_than, 'number', true, false]
+              rules << { type: 'greaterThanNumber', compare_to: operator_value.to_s }
+            in [:greater_than, 'number', false, true]
+              rules << { type: 'greaterThanNumber', greater_than: operator_value.to_i }
+            in [:greater_than, 'date', true, true]
+              rules << { type: 'greaterThanDate', compare_to: operator_value.to_s }
+            in [:greater_than, 'date', false, true]
+              rules << { type: 'greaterThanDate', greater_than: get_date_to_iso_8601.call(operator_value) }
 
-          when "FormatValidator"
-            rules << { type: "backend", backend_hint: "Contrainte d'expression régulière" }
+            in [:greater_than_or_equal_to, 'number', true, false]
+              rules << { type: 'greaterThanOrEqualNumber', compare_to: operator_value.to_s }
+            in [:greater_than_or_equal_to, 'number', false, true]
+              rules << { type: 'greaterThanOrEqualNumber', greater_than: operator_value.to_i }
+            in [:greater_than_or_equal_to, 'date', true, true]
+              rules << { type: 'greaterThanOrEqualDate', compare_to: operator_value.to_s }
+            in [:greater_than_or_equal_to, 'date', false, true]
+              rules << { type: 'greaterThanOrEqualDate', greater_than: get_date_to_iso_8601.call(operator_value) }
 
-          when "InclusionValidator"
-            if is_value_class_array
-              rules << { type: 'inclusion', including: validator.options[:in]}
+            in [:equal_to, 'number', true, false]
+              rules << { type: 'equalToNumber', compare_to: operator_value.to_s }
+            in [:equal_to, 'number', false, true]
+              rules << { type: 'equalToNumber', greater_than: operator_value.to_i }
+            in [:equal_to, 'date', true, true]
+              rules << { type: 'equalToDate', compare_to: operator_value.to_s }
+            in [:equal_to, 'date', false, true]
+              rules << { type: 'equalToDate', greater_than: get_date_to_iso_8601.call(operator_value) }
+
+            in [:less_than, 'number', true, false]
+              rules << { type: 'lessThanNumber', compare_to: operator_value.to_s }
+            in [:less_than, 'number', false, true]
+              rules << { type: 'lessThanNumber', greater_than: operator_value.to_i }
+            in [:less_than, 'date', true, true]
+              rules << { type: 'lessThanDate', compare_to: operator_value.to_s }
+            in [:less_than, 'date', false, true]
+              rules << { type: 'lessThanDate', greater_than: get_date_to_iso_8601.call(operator_value) }
+
+            in [:less_than_or_equal_to, 'number', true, false]
+              rules << { type: 'lessThanOrEqualNumber', compare_to: operator_value.to_s }
+            in [:less_than_or_equal_to, 'number', false, true]
+              rules << { type: 'lessThanOrEqualNumber', greater_than: operator_value.to_i }
+            in [:less_than_or_equal_to, 'date', true, true]
+              rules << { type: 'lessThanOrEqualDate', compare_to: operator_value.to_s }
+            in [:less_than_or_equal_to, 'date', false, true]
+              rules << { type: 'lessThanOrEqualDate', greater_than: get_date_to_iso_8601.call(operator_value) }
+
+            in [:other_than, 'number', true, false]
+              rules << { type: 'otherThanNumber', compare_to: operator_value.to_s }
+            in [:other_than, 'number', false, true]
+              rules << { type: 'otherThanNumber', greater_than: operator_value.to_i }
+            in [:other_than, 'date', true, true]
+              rules << { type: 'otherThanDate', compare_to: operator_value.to_s }
+            in [:other_than, 'date', false, true]
+              rules << { type: 'otherThanDate', greater_than: get_date_to_iso_8601.call(operator_value) }
             else
-              rules << { type: "backend", backend_hint: "Contrainte d'inclusion" }
+              next
             end
+          end
 
-          when "ExclusionValidator"
-            if is_value_class_array
-              rules << { type: 'exclusion', including: validator.options[:in]}
-            else
-              rules << { type: "backend", backend_hint: "Contrainte d'exclusion" }
-            end
-          
-          when "LengthValidator"
-            operators = [:minimum, :maximum, :is] # :in is getting parsed into min and max
-            operators.each do |operator_key|
-              operator_value = validator.options[operator_key]
-              if operator_value.nil?
-                next
-              end
-              case operator_key
-              when :minimum
-                  rules << { type: 'greaterThanOrEqualStringLength', greater_than: operator_value.to_i }
-              when :maximum
-                  rules << { type: 'lessThanOrEqualStringLength', less_than: operator_value.to_i}
-              when :is
-                  rules << { type: 'equalToStringLength', equal_to: operator_value.to_i}
-              end
-            end
+        when "FormatValidator"
+          rules << { type: "backend", backend_hint: "Contrainte d'expression régulière" }
 
-          when "NumericalityValidator"
-            operators = [:only_integer, :only_numeric, :greater_than, :greater_than_or_equal_to, :equal_to, :less_than, :less_than_or_equal_to, :other_than, :minimum, :maximum, :odd, :even]
-            operators.each do |operator_key|
-              operator_value = validator.options[operator_key]
-              if (operator_value.nil? || operator_value == false)
-                next
-              end
-              case operator_key
-              when :only_integer
-                  rules << { type: 'numberIntegerOnly' }
-              when :only_numeric
-                  rules << { type: 'numberNumericOnly' }
-              when :greater_than
-                  rules << { type: 'greaterThanNumber', greater_than: operator_value.to_i }
-              when :greater_than_or_equal_to
-                  rules << { type: 'greaterThanOrEqualNumber', greater_than: operator_value.to_i }
-              when :equal_to
-                  rules << { type: 'equalToNumber', equal_to: operator_value.to_i }
-              when :less_than
-                  rules << { type: 'lessThanNumber', less_than: operator_value.to_i }
-              when :less_than_or_equal_to
-                  rules << { type: 'lessThanOrEqualNumber', less_than: operator_value.to_i }
-              when :other_than
-                  rules << { type: 'otherThanNumber', less_than: operator_value.to_i }
-              when :in
-                  rules << { type: 'greaterThanOrEqualNumber', greater_than: operator_value.to_i }
-                  rules << { type: 'lessThanOrEqualNumber', less_than: operator_value.to_i }
-              when :odd
-                  rules << { type: 'numberOddOnly', less_than: operator_value.to_i }
-              when :even
-                  rules << { type: 'numberEvenOnly', less_than: operator_value.to_i }
-              end
-            end
-
-          when "PresenceValidator"
-            rules << { type: 'required' }
-
-          when "UniquenessValidator"
-            rules << { type: "backend", backend_hint: "Contrainte d'unicité" }
-
-          when "BlockValidator"
-            rules << { type: "backend", backend_hint: "Contrainte spécifique" }
+        when "InclusionValidator"
+          if is_value_class_array
+            rules << { type: 'inclusion', including: validator.options[:in] }
           else
-            next
+            rules << { type: "backend", backend_hint: "Contrainte d'inclusion" }
+          end
+
+        when "ExclusionValidator"
+          if is_value_class_array
+            rules << { type: 'exclusion', including: validator.options[:in] }
+          else
+            rules << { type: "backend", backend_hint: "Contrainte d'exclusion" }
+          end
+
+        when "LengthValidator"
+          operators = [:minimum, :maximum, :is] # :in is getting parsed into min and max
+          operators.each do |operator_key|
+            operator_value = validator.options[operator_key]
+            if operator_value.nil?
+              next
+            end
+            case operator_key
+            when :minimum
+              rules << { type: 'greaterThanOrEqualStringLength', greater_than: operator_value.to_i }
+            when :maximum
+              rules << { type: 'lessThanOrEqualStringLength', less_than: operator_value.to_i }
+            when :is
+              rules << { type: 'equalToStringLength', equal_to: operator_value.to_i }
+            else
+              next
+            end
+          end
+
+        when "NumericalityValidator"
+          operators = [:only_integer, :only_numeric, :greater_than, :greater_than_or_equal_to, :equal_to, :less_than, :less_than_or_equal_to, :other_than, :minimum, :maximum, :odd, :even]
+          operators.each do |operator_key|
+            operator_value = validator.options[operator_key]
+            if operator_value.nil? || operator_value == false
+              next
+            end
+            case operator_key
+            when :only_integer
+              rules << { type: 'numberIntegerOnly' }
+            when :only_numeric
+              rules << { type: 'numberNumericOnly' }
+            when :greater_than
+              rules << { type: 'greaterThanNumber', greater_than: operator_value.to_i }
+            when :greater_than_or_equal_to
+              rules << { type: 'greaterThanOrEqualNumber', greater_than: operator_value.to_i }
+            when :equal_to
+              rules << { type: 'equalToNumber', equal_to: operator_value.to_i }
+            when :less_than
+              rules << { type: 'lessThanNumber', less_than: operator_value.to_i }
+            when :less_than_or_equal_to
+              rules << { type: 'lessThanOrEqualNumber', less_than: operator_value.to_i }
+            when :other_than
+              rules << { type: 'otherThanNumber', less_than: operator_value.to_i }
+            when :in
+              rules << { type: 'greaterThanOrEqualNumber', greater_than: operator_value.to_i }
+              rules << { type: 'lessThanOrEqualNumber', less_than: operator_value.to_i }
+            when :odd
+              rules << { type: 'numberOddOnly', less_than: operator_value.to_i }
+            when :even
+              rules << { type: 'numberEvenOnly', less_than: operator_value.to_i }
+            else
+              next
+            end
+          end
+
+        when "PresenceValidator"
+          rules << { type: 'required' }
+
+        when "UniquenessValidator"
+          rules << { type: "backend", backend_hint: "Contrainte d'unicité" }
+
+        when "BlockValidator"
+          rules << { type: "backend", backend_hint: "Contrainte spécifique" }
+        else
+          next
         end
       end
-      return rules
+      rules
     end
 
     def submit64_get_column_select_options(field_def, column_name)
@@ -496,15 +516,15 @@ module Submit64
           {
             label: enum_key_map,
             value: enum_key_map
-          }          
+          }
         end
       end
 
-      return []
+      []
     end
 
     def submit64_beautify_target(target)
-      return target.to_s.capitalize.gsub('_', ' ')
+      target.to_s.capitalize.gsub('_', ' ')
     end
 
     def submit64_association_default_label(row)
@@ -517,7 +537,7 @@ module Submit64
       if row.respond_to?(:to_s)
         return row.method(:to_s).call
       end
-      return row.method(self.primary_key.to_sym).call
+      row.method(self.primary_key.to_sym).call
     end
 
     def submit64_try_model_method_with_context(method_name, context)
@@ -529,7 +549,7 @@ module Submit64
           return method_found.call
         end
       end
-      return nil
+      nil
     end
 
     def submit64_try_row_method_with_context(row, method_name, context)
@@ -541,7 +561,7 @@ module Submit64
           return method_found.call
         end
       end
-      return nil
+      nil
     end
 
   end

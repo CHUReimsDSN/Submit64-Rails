@@ -78,7 +78,7 @@ module Submit64
             field_index_to_purge << index_field
           end
         end
-        section[:fields] = section[:fields].select do |field, index_select|
+        section[:fields] = section[:fields].select.with_index do |field, index_select|
           field_index_to_purge.exclude?(index_select)
         end
       end

@@ -126,7 +126,11 @@ module Submit64
         }
       end
 
-      resource_data, form_metadata = submit64_get_resource_data(form_metadata, request_params, context)
+      if request_params[:resourceId]
+        resource_data, form_metadata = submit64_get_resource_data(form_metadata, request_params, context)
+      else
+        resource_data = {}
+      end
 
       {
         form: form_metadata,
@@ -226,25 +230,22 @@ module Submit64
       perform_validation = form[:use_model_validations] == true
       success = false
       errors = []
-      resource_id = resource_instance.id
-      if !perform_validation
-        resource_instance.save(validate: false)
-        return {
-          success: true,
-          resource_id: resource_instance.id,
-          errors: []
-        }
-      end
-      if resource_instance.valid?
+      resource_id = resource_instance.id || nil
+      if resource_instance.valid? || !perform_validation
         resource_instance.save(validate: false) # Avoid double checks, .valid? already does it
         success = true
         resource_id = resource_instance.id
+        params_for_form = { resourceName: request_params[:resourceName],
+                            resourceId?: request_params[:resourceId],
+                            context?: request_params[:context] }
+        resource_data_renew, _form_renew = submit64_get_form_metadata_and_data(params_for_form)
       else
         errors = resource_instance.errors.details
       end
       {
         success: success,
         resource_id: resource_id,
+        resource_data: resource_data_renew,
         errors: errors
       }
     end

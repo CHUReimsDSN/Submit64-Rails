@@ -66,7 +66,7 @@ module Submit64
     # From frontend
     type get_metadata_params = {
         resourceName: String,
-        resourceId: String | Integer,
+        resourceId?: String | Integer,
         context?: context
       }
     type get_association_data = {
@@ -96,7 +96,8 @@ module Submit64
     type get_submit_data_response = {
         success: bool,
         errors: Hash[String, Array[String]],
-        resource_id: String | Integer,
+        resource_id: String | Integer | nil,
+        resource_data: Hash[string, untyped] | nil,
       }
 
     def submit64_get_form_metadata_and_data: (get_metadata_params) -> get_metadata_params_response

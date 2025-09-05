@@ -30,7 +30,7 @@ module Submit64
         resource_name: self.to_s,
         css_class: ''
       }
-      form_metadata = submit64_try_model_method_with_context(self.class, :submit64_form_builder, context)
+      form_metadata = submit64_try_model_method_with_context(self, :submit64_form_builder, context)
       if form_metadata.nil?
         form_metadata = default_form_metadata
       else
@@ -622,7 +622,7 @@ module Submit64
         backend_date_format: 'YYYY-MM-DD',
         backend_datetime_format: 'YYYY-MM-DDTHH:MM:SSZ',
       }
-      form = submit64_try_model_method_with_context(self.class, :submit64_form_builder, context)
+      form = submit64_try_model_method_with_context(self, :submit64_form_builder, context)
       if form.nil?
         form = default_form
       else

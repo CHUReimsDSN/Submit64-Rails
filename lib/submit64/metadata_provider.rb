@@ -353,7 +353,9 @@ module Submit64
       if association != nil
         case association.class.to_s.demodulize
         when "BelongsToReflection"
-          rules << { type: 'required' }
+          if association.options[:optional] == false
+            rules << { type: 'required' }
+          end
         else
           nil
         end

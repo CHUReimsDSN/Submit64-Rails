@@ -43,7 +43,20 @@ module Submit64
   end
 
   def self.submit_form(params)
-    # TODO
+    if !params[:submit64Params]
+      raise Submit64Exception.new("Invalid params", 400)
+    end
+    resource_name = params[:submit64Params][:resourceName]
+    begin
+      resource_class = resource_name.constantize
+    rescue Exception
+      raise Submit64Exception.new("This resource does not exist : #{resource_name}", 400)
+    end
+    if !resource_class.singleton_class.ancestors.include?(Submit64::MetadataProvider)
+      raise Submit64Exception.new("This resource does not extend Submit64 : #{resource_name}", 400)
+    end
+    request_params = params[:submit64Params]
+    resource_class.submit64_get_submit_data(request_params)
   end
 
 end

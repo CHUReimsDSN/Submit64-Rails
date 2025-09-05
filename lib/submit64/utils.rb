@@ -23,6 +23,17 @@ module Submit64
     )
   end
 
+  def self.permit_submit_params(params)
+    params.permit(
+      submit64Params: [
+        :resource_name,
+        :resourceId,
+        :form_data,
+        context: {}
+      ]
+    )
+  end
+
   def self.get_association_data_pagination_limit
     20
   end

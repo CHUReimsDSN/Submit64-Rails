@@ -5,13 +5,13 @@ module Submit64
   module MetadataProvider
     def self.extended(base)
       unless base < ActiveRecord::Base
-        raise "#{base} must inherit from ActiveRecord::Base to extend Submit64::MetadataProvider"
+        raise Submit64Exception("#{base} must inherit from ActiveRecord::Base to extend Submit64::MetadataProvider", 400)
       end
     end
 
     def submit64_get_form_metadata_and_data(request_params)
       unless self < ActiveRecord::Base
-        raise "Method must be called from ActiveRecord::Base inherited class"
+        raise Submit64Exception("Method must be called from ActiveRecord::Base inherited class", 400)
       end
       context = request_params[:context]
       if context != nil
@@ -20,7 +20,7 @@ module Submit64
         context = {}
       end
 
-      # First sructuration
+      # First sructuration
       default_form_metadata = {
         sections: [],
         use_model_validations: true,
@@ -30,7 +30,7 @@ module Submit64
         resource_name: self.to_s,
         css_class: ''
       }
-      form_metadata = submit64_try_model_method_with_context(self, :submit64_form_builder, context)
+      form_metadata = submit64_try_model_method_with_context(self.class, :submit64_form_builder, context)
       if form_metadata.nil?
         form_metadata = default_form_metadata
       else
@@ -50,22 +50,21 @@ module Submit64
         end
       end
 
-
       # Filters
       section_index_to_purge = []
       form_metadata[:sections].each_with_index do |section, index_section|
-        if section[:policy]
-          result_section_policy = section[:policy].call(Submit64.current_user)
-          if !result_section_policy
+        if section[:statement]
+          result_section_statement = section[:statement].call(Submit64.current_user)
+          if !result_section_statement
             section_index_to_purge << index_section
             next
           end
         end
         field_index_to_purge = []
         section[:fields].each_with_index do |field, index_field|
-          if field[:policy]
-            result_field_policy = field[:policy].call(Submit64.current_user)
-            if !result_field_policy
+          if field[:statement]
+            result_field_statement = field[:statement].call(Submit64.current_user)
+            if !result_field_statement
               field_index_to_purge << index_field
               next
             end
@@ -78,7 +77,7 @@ module Submit64
             field_index_to_purge << index_field
           end
         end
-        section[:fields] = section[:fields].select.with_index do |field, index_select|
+        section[:fields] = section[:fields].select.with_index do |_field, index_select|
           field_index_to_purge.exclude?(index_select)
         end
       end
@@ -86,7 +85,7 @@ module Submit64
         section_index_to_purge.exclude?(index_section) && section[:fields].count > 0
       end
 
-      # Projection
+      # Projection
       form_metadata[:sections] = form_metadata[:sections].map do |section_map|
         fields = section_map[:fields].map do |field_map|
           association = self.reflect_on_association(field_map[:target])
@@ -137,7 +136,7 @@ module Submit64
 
     def submit64_get_association_data(request_params)
       unless self < ActiveRecord::Base
-        raise "Method must be called from ActiveRecord::Base inherited class"
+        raise Submit64Exception("Method must be called from ActiveRecord::Base inherited class", 400)
       end
       context = request_params[:context]
       if context != nil
@@ -203,7 +202,55 @@ module Submit64
       }
     end
 
+    def submit64_get_submit_data(request_params)
+      unless self < ActiveRecord::Base
+        raise Submit64Exception("Method must be called from ActiveRecord::Base inherited class", 400)
+      end
+      context = request_params[:context]
+      if context != nil
+        context = context.to_h
+      else
+        context = {}
+      end
+      edit_mode = request_params[:resourceId] != nil
+      if !edit_mode
+        resource_instance = self.new(request_params[:resourceData])
+      else
+        resource_instance = self.find(request_params[:resourceId])
+      end
+      if resource_instance.nil?
+        raise Submit64Exception("Resource #{request_params[:resourceName]} with id #{request_params[:resourceId]} does not exist", 404)
+      end
+      resource_instance.assign_attributes(request_params[:resourceData])
+      form = submit64_get_shallow_form_config(context)
+      perform_validation = form[:use_model_validations] == true
+      success = false
+      errors = []
+      resource_id = resource_instance.id
+      if !perform_validation
+        resource_instance.save(validate: false)
+        return {
+          success: true,
+          resource_id: resource_instance.id,
+          errors: []
+        }
+      end
+      if resource_instance.valid?
+        resource_instance.save(validate: false) # Avoid double checks, .valid? already does it
+        success = true
+        resource_id = resource_instance.id
+      else
+        errors = resource_instance.errors.details
+      end
+      {
+        success: success,
+        resource_id: resource_id,
+        errors: errors
+      }
+    end
+
     private
+
     def submit64_get_resource_data(form_metadata, request_params, context)
       relations_to_include = []
       columns_to_select = []
@@ -301,8 +348,14 @@ module Submit64
         return rules
       end
 
-      if !self.reflect_on_association(field[:target]).nil?
-        # TODO required sur les belongs_to
+      association = self.reflect_on_association(field[:target])
+      if association != nil
+        case association.class.to_s.demodulize
+        when "BelongsToReflection"
+          rules << { type: 'required' }
+        else
+          nil
+        end
         return rules
       end
 
@@ -337,7 +390,7 @@ module Submit64
           rules << { type: "acceptance" }
 
         when "ConfirmationValidator"
-          next # useless, too much MVC-ish, use comparison instead
+          next # useless, too much MVC-ish, use comparison instead
 
         when "ComparisonValidator"
           operators = [:greater_than, :greater_than_or_equal_to, :equal_to, :less_than, :less_than_or_equal_to, :other_than]
@@ -425,7 +478,7 @@ module Submit64
           end
 
         when "LengthValidator"
-          operators = [:minimum, :maximum, :is] # :in is getting parsed into min and max
+          operators = [:minimum, :maximum, :is] # :in is getting parsed into min and max
           operators.each do |operator_key|
             operator_value = validator.options[operator_key]
             if operator_value.nil?
@@ -527,15 +580,15 @@ module Submit64
 
     def submit64_association_default_label(row)
       if row.respond_to?(:label)
-        return row.method(:label).call
+        return row.method(:label).call.to_s
       end
       if row.respond_to?(:to_string)
-        return row.method(:to_string).call
+        return row.method(:to_string).call.to_s
       end
       if row.respond_to?(:to_s)
-        return row.method(:to_s).call
+        return row.method(:to_s).call.to_s
       end
-      row.method(self.primary_key.to_sym).call
+      row.method(self.primary_key.to_sym).call.to_s
     end
 
     def submit64_try_model_method_with_context(class_model, method_name, context)
@@ -560,6 +613,25 @@ module Submit64
         end
       end
       nil
+    end
+
+    def submit64_get_shallow_form_config(context)
+      default_form = {
+        use_model_validations: true,
+        backend_date_format: 'YYYY-MM-DD',
+        backend_datetime_format: 'YYYY-MM-DDTHH:MM:SSZ',
+      }
+      form = submit64_try_model_method_with_context(self.class, :submit64_form_builder, context)
+      if form.nil?
+        form = default_form
+      else
+        form = default_form.merge(form)
+      end
+      {
+        backend_date_format: form[:backend_date_format],
+        backend_datetime_format: form[:backend_datetime_format],
+        use_model_validations?: form[:use_model_validations?],
+      }
     end
 
   end

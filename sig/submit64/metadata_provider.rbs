@@ -1,0 +1,134 @@
+module Submit64
+  module MetadataProvider
+    type hashForm = {
+        sections: Array[hashSection],
+        resource_name: String,
+        backend_date_format: String,
+        backend_datetime_format: String,
+        use_model_validations?: bool,
+        has_global_custom_validation?: bool,
+        resetable?: bool,
+        clearable?: bool,
+        css_class?: String,
+      }
+    type hashSection = {
+        fields: Array[hashField],
+        label?: String,
+        icon?: String,
+        css_class?: String,
+        statement?: Proc,
+      }
+    type hashField = {
+        field_name: String,
+        field_type: String,
+        label: String,
+        field_association_name?: String,
+        field_association_class?: String,
+        hint?: String,
+        rules?: Array[rule],
+        select_options?: selectOptions,
+        css_class?: String,
+        resetable?: bool,
+        clearable?: bool,
+        readonly?: bool,
+        default_display_value?: String,
+        statement?: Proc,
+      }
+    type rule = {
+        type: String,
+        backend_hint?: String,
+        less_than?: Integer | String,
+        greater_than?: Integer | String,
+        format?: String,
+        including?: Array[String],
+        excluding?: Array[String],
+        equal_to?: Integer,
+        other_than?: String,
+        min?: Integer,
+        max?: Integer,
+        compare_to?: String,
+      }
+
+    # Misc
+    type context = Hash[String, untyped]
+    type resourceData = Hash[String, untyped]
+    type selectOptions = Array[{
+          label: String,
+          value: untyped,
+          disabled?: bool
+        }]
+    type shallowForm = {
+        backend_date_format: String,
+        backend_datetime_format: String,
+        use_model_validations?: bool,
+      }
+
+    # From frontend
+    type get_metadata_params = {
+        resourceName: String,
+        resourceId: String | Integer,
+        context?: context
+      }
+    type get_association_data = {
+        resourceName: String,
+        associationName: String,
+        limit: Integer,
+        offset: Integer,
+        labelFilter?: String,
+        context?: context
+      }
+    type get_submit_data = {
+        resourceName: String,
+        resourceData: resourceData,
+        resourceId?: String | Integer,
+        context?: context
+      }
+
+    # To frontend
+    type get_metadata_params_response = {
+        form: hashForm,
+        resource_data: resourceData
+      }
+    type get_association_data_response = {
+        rows: Array[Hash[String, untyped]],
+        row_count: Integer
+      }
+    type get_submit_data_response = {
+        success: bool,
+        errors: Hash[String, Array[String]],
+        resource_id: String | Integer,
+      }
+
+    def submit64_get_form_metadata_and_data: (get_metadata_params) -> get_metadata_params_response
+
+    def submit64_get_association_data: (get_association_data) -> get_association_data_response
+
+    def submit64_get_submit_data: (get_submit_data) -> get_submit_data_response
+
+    private
+
+    def submit64_get_resource_data: (hashForm, get_metadata_params, context) -> [hashForm, resourceData]
+
+    def submit64_get_column_type_by_sgbd_type: (Symbol) -> Symbol
+
+    def submit64_get_form_field_type_by_column_type: (Symbol) -> String
+
+    def submit64_get_form_field_type_by_association: (Class) -> String
+
+    def submit64_get_column_rules: (hashField, Symbol, hashForm, String) -> Array[rule]
+
+    def submit64_get_column_select_options: (hashField, Symbol) -> selectOptions
+
+    def submit64_beautify_target: (Symbol) -> String
+
+    def submit64_association_default_label: (Class) -> String
+
+    def submit64_try_model_method_with_context: (Class, Symbol, context) -> untyped
+
+    def submit64_try_row_method_with_context: (Class, Symbol, context) -> untyped
+
+    def submit64_get_shallow_form_config: (context) -> shallowForm
+
+  end
+
+end

@@ -4,12 +4,12 @@ module Submit64
     attr_accessor :http_status
 
     def initialize(message, http_status)
-      super("Submit64Exception -> #{message}")
+      super(message)
       self.http_status = http_status
     end
 
-    def self.new_raw(message, http_status)
-      super(message)
+    def self.new_with_prefix(message, http_status)
+      super("Submit64Exception -> #{message}")
       self.http_status = http_status
       self
     end

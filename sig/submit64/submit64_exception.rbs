@@ -3,7 +3,8 @@ module Submit64
     attr_accessor http_status: Integer
 
     def initialize: (String, Integer) -> Submit64Exception
-    def self.new_raw: (String, Integer) -> Submit64Exception
+
+    def new_with_prefix: (String, Integer) -> Submit64Exception
 
   end
 end

@@ -54,7 +54,7 @@ module Submit64
     begin
       yield
     rescue => e
-      raise Submit64Exception.new_raw("An error has occured : #{e}", 500)
+      raise Submit64Exception.new_with_prefix("An error has occured : #{e}", 500)
     end
   end
 

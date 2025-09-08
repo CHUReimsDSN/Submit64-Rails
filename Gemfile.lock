@@ -48,6 +48,8 @@ GEM
     racc (1.8.1)
     rainbow (3.1.1)
     rake (13.3.0)
+    rbs (3.9.4)
+      logger
     regexp_parser (2.11.2)
     rubocop (1.80.2)
       json (~> 2.3)
@@ -79,6 +81,7 @@ PLATFORMS
 
 DEPENDENCIES
   rake (~> 13.0)
+  rbs
   rubocop (~> 1.21)
   submit64!
 

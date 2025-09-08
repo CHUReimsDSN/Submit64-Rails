@@ -231,7 +231,7 @@ module Submit64
       success = false
       errors = []
       resource_id = resource_instance.id || nil
-      if resource_instance.valid? || !perform_validation
+      if !perform_validation || resource_instance.valid?
         resource_instance.save(validate: false) # Avoid double checks, .valid? already does it
         success = true
         resource_id = resource_instance.id
@@ -495,7 +495,7 @@ module Submit64
             when :is
               rules << { type: 'equalToStringLength', equal_to: operator_value.to_i }
             else
-              next
+              nil
             end
           end
 
@@ -531,7 +531,7 @@ module Submit64
             when :even
               rules << { type: 'numberEvenOnly', less_than: operator_value.to_i }
             else
-              next
+              nil
             end
           end
 
@@ -544,7 +544,7 @@ module Submit64
         when "BlockValidator"
           rules << { type: "backend", backend_hint: "Contrainte spécifique" }
         else
-          next
+          nil
         end
       end
       rules

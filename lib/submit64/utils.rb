@@ -28,7 +28,8 @@ module Submit64
       submit64Params: [
         :resource_name,
         :resourceId,
-        :form_data,
+        resource_data: {},
+        form_data: {},
         context: {}
       ]
     )

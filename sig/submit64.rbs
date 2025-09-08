@@ -20,7 +20,6 @@ module Submit64
       submit64Params: get_association_data
     }) -> get_association_data_response
 
-
   def self.submit_form: ({
       submit64Params: get_submit_data
     }) -> get_submit_data_response
@@ -33,8 +32,10 @@ module Submit64
 
   def self.get_association_data_pagination_limit: -> Integer
 
-  private
   def self.ensure_params_and_resource_are_valid: (get_generic) -> instance
+
+  private
+
   def self.safe_exec: [T] () { () -> T } -> T
 
 end

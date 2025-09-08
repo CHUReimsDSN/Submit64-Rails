@@ -9,30 +9,29 @@ require_relative "submit64/version"
 module Submit64
 
   def self.get_metadata_and_data(params)
-    resource_class = ensure_params_and_resource_are_valid(params)
-    request_params = params[:submit64Params]
     safe_exec do
+      resource_class = ensure_params_and_resource_are_valid(params)
+      request_params = params[:submit64Params]
       resource_class.submit64_get_form_metadata_and_data(request_params)
     end
   end
 
   def self.get_association_data(params)
-    resource_class = ensure_params_and_resource_are_valid(params)
-    request_params = params[:submit64Params]
     safe_exec do
+      resource_class = ensure_params_and_resource_are_valid(params)
+      request_params = params[:submit64Params]
       resource_class.submit64_get_association_data(request_params)
     end
   end
 
   def self.submit_form(params)
-    resource_class = ensure_params_and_resource_are_valid(params)
-    request_params = params[:submit64Params]
     safe_exec do
+      resource_class = ensure_params_and_resource_are_valid(params)
+      request_params = params[:submit64Params]
       resource_class.submit64_get_submit_data(request_params)
     end
   end
 
-  private
   def self.ensure_params_and_resource_are_valid(params)
     if !params[:submit64Params]
       raise Submit64Exception.new("Invalid params", 400)
@@ -49,11 +48,13 @@ module Submit64
     resource_class
   end
 
+  private
+
   def self.safe_exec
     begin
       yield
     rescue => e
-      raise Submit64Exception.new("Submit64 : An error has occured : #{e}", 500)
+      raise Submit64Exception.new("An error has occured : #{e}", 500)
     end
   end
 

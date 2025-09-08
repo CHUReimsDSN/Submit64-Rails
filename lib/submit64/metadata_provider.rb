@@ -179,7 +179,7 @@ module Submit64
         end
         label_filter_builder = builder_rows.none
         columns_filter.each do |column_filter|
-          if self.columns_hash[column_filter.to_s].nil?
+          if association_class.columns_hash[column_filter.to_s].nil?
             next
           end
           builder_statement = association_class.where("#{association_class.table_name}.#{column_filter.to_s}::text ILIKE ?", "%#{label_filter}%")

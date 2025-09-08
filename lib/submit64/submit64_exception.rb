@@ -10,7 +10,6 @@ module Submit64
 
     def self.new_with_prefix(message, http_status)
       new("Submit64Exception -> #{message}", http_status)
-      self
     end
 
   end

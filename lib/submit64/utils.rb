@@ -26,10 +26,9 @@ module Submit64
   def self.permit_submit_params(params)
     params.permit(
       submit64Params: [
-        :resource_name,
+        :resourceName,
         :resourceId,
-        resource_data: {},
-        form_data: {},
+        resourceData: {},
         context: {}
       ]
     )

@@ -8,6 +8,12 @@ module Submit64
       self.http_status = http_status
     end
 
+    def new_raw(message, http_status)
+      super(message)
+      self.http_status = http_status
+      self
+    end
+
   end
 
 end

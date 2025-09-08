@@ -3,7 +3,11 @@ use Submit64::MetadataProvider::*
 module Submit64
   VERSION: String
 
-  self.@current_user: Class | nil
+  type get_generic = {
+      resourceName: String,
+    } & Hash[String, untyped]
+
+  self.@current_user: instance | nil
   self.@settings: {
       always_exclude: Array[Symbol]
     }
@@ -16,15 +20,21 @@ module Submit64
       submit64Params: get_association_data
     }) -> get_association_data_response
 
+
   def self.submit_form: ({
       submit64Params: get_submit_data
     }) -> get_submit_data_response
 
-  def self.permit_metadata_and_data_params: (Class) -> Class
+  def self.permit_metadata_and_data_params: (instance) -> instance
 
-  def self.permit_association_data_params: (Class) -> Class
+  def self.permit_association_data_params: (instance) -> instance
 
-  def self.permit_submit_params: (Class) -> Class
+  def self.permit_submit_params: (instance) -> instance
 
   def self.get_association_data_pagination_limit: -> Integer
+
+  private
+  def self.ensure_params_and_resource_are_valid: (get_generic) -> instance
+  def self.safe_exec: [T] () { () -> T } -> T
+
 end

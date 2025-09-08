@@ -9,40 +9,31 @@ require_relative "submit64/version"
 module Submit64
 
   def self.get_metadata_and_data(params)
-    if !params[:submit64Params]
-      raise Submit64Exception.new("Invalid params", 400)
-    end
-    resource_name = params[:submit64Params][:resourceName]
-    begin
-      resource_class = resource_name.constantize
-    rescue Exception
-      raise Submit64Exception.new("This resource does not exist : #{resource_name}", 400)
-    end
-    if !resource_class.singleton_class.ancestors.include?(Submit64::MetadataProvider)
-      raise Submit64Exception.new("This resource does not extend Submit64 : #{resource_name}", 400)
-    end
+    resource_class = ensure_params_and_resource_are_valid(params)
     request_params = params[:submit64Params]
-    resource_class.submit64_get_form_metadata_and_data(request_params)
+    safe_exec do
+      resource_class.submit64_get_form_metadata_and_data(request_params)
+    end
   end
 
   def self.get_association_data(params)
-    if !params[:submit64Params]
-      raise Submit64Exception.new("Invalid params", 400)
-    end
-    resource_name = params[:submit64Params][:resourceName]
-    begin
-      resource_class = resource_name.constantize
-    rescue Exception
-      raise Submit64Exception.new("This resource does not exist : #{resource_name}", 400)
-    end
-    if !resource_class.singleton_class.ancestors.include?(Submit64::MetadataProvider)
-      raise Submit64Exception.new("This resource does not extend Submit64 : #{resource_name}", 400)
-    end
+    resource_class = ensure_params_and_resource_are_valid(params)
     request_params = params[:submit64Params]
-    resource_class.submit64_get_association_data(request_params)
+    safe_exec do
+      resource_class.submit64_get_association_data(request_params)
+    end
   end
 
   def self.submit_form(params)
+    resource_class = ensure_params_and_resource_are_valid(params)
+    request_params = params[:submit64Params]
+    safe_exec do
+      resource_class.submit64_get_submit_data(request_params)
+    end
+  end
+
+  private
+  def self.ensure_params_and_resource_are_valid(params)
     if !params[:submit64Params]
       raise Submit64Exception.new("Invalid params", 400)
     end
@@ -55,8 +46,15 @@ module Submit64
     if !resource_class.singleton_class.ancestors.include?(Submit64::MetadataProvider)
       raise Submit64Exception.new("This resource does not extend Submit64 : #{resource_name}", 400)
     end
-    request_params = params[:submit64Params]
-    resource_class.submit64_get_submit_data(request_params)
+    resource_class
+  end
+
+  def self.safe_exec
+    begin
+      yield
+    rescue => e
+      raise Submit64Exception.new("Submit64 : An error has occured : #{e}", 500)
+    end
   end
 
 end

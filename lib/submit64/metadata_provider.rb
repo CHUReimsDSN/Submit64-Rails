@@ -235,9 +235,11 @@ module Submit64
         resource_instance.save(validate: false) # Avoid double checks, .valid? already does it
         success = true
         resource_id = resource_instance.id
-        params_for_form = { resourceName: request_params[:resourceName],
-                            resourceId?: request_params[:resourceId],
-                            context?: request_params[:context] }
+        params_for_form = {
+          resourceName: request_params[:resourceName],
+          resourceId: request_params[:resourceId],
+          context: request_params[:context]
+        }
         resource_data_renew, _form_renew = submit64_get_form_metadata_and_data(params_for_form)
       else
         errors = resource_instance.errors.details
@@ -633,7 +635,7 @@ module Submit64
       {
         backend_date_format: form[:backend_date_format],
         backend_datetime_format: form[:backend_datetime_format],
-        use_model_validations?: form[:use_model_validations],
+        use_model_validations: form[:use_model_validations],
       }
     end
 

@@ -387,7 +387,7 @@ module Submit64
       end
 
       is_value_symbol_and_column = -> (value) { return value.class == Symbol && column_names.include?(value.to_s) }
-      is_value_class_not_proc = -> (value) { return value.class != Proc }
+      is_value_class_not_proc_neither_symbol = -> (value) { return value.class != Proc && value.class != Symbol }
       is_value_class_array = -> (value) { return value.class == Array }
       get_date_to_iso_8601 = -> (value) { return value.as_json }
       self.validators_on(field[:target]).each do |validator|
@@ -427,7 +427,7 @@ module Submit64
               next
             end
             value_symbol_and_column = is_value_symbol_and_column.call(validator.options[operator_key])
-            value_class_not_proc = is_value_class_not_proc.call(validator.options[operator_key])
+            value_class_not_proc = is_value_class_not_proc_neither_symbol.call(validator.options[operator_key])
             case [operator_key, field_type.to_s, value_symbol_and_column, value_class_not_proc]
             in [:greater_than, 'number', true, false]
               rules << { type: 'greaterThanNumber', compare_to: operator_value.to_s }

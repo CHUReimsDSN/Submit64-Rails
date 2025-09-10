@@ -249,7 +249,7 @@ module Submit64
         columns = self.column_names
         errors.keys.each do |key|
           if columns.exclude?(key.to_s)
-            association = self.reflect_on_association(:key)
+            association = self.reflect_on_association(key)
             if association != nil && association.class.to_s.demodulize == "BelongsToReflection"
               keys_to_rename[key] = association.foreign_key.to_sym
             end

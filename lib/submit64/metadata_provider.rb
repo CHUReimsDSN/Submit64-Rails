@@ -243,6 +243,28 @@ module Submit64
         resource_data_renew, _form_renew = submit64_get_form_metadata_and_data(params_for_form)
       else
         errors = resource_instance.errors.details
+
+        # Replace key for belongs_to
+        keys_to_rename = {}
+        columns = self.column_names
+        errors.keys.each do |key|
+          if columns.exclude?(key.to_s)
+            association = self.reflect_on_association(:key)
+            if association != nil && association.class.to_s.demodulize == "BelongsToReflection"
+              keys_to_rename[key] = association.foreign_key.to_sym
+            end
+          end
+        end
+        keys_to_rename.each do |key_to_rename, renamed_key|
+          errors[renamed_key] = errors[key_to_rename]
+          errors.delete[key_to_rename]
+        end
+
+        # Project errors hash to string
+        errors.values.each do |value|
+          value = value.map(&:error)
+        end
+
       end
       {
         success: success,

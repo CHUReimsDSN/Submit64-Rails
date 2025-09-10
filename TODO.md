@@ -1,2 +1,2 @@
-- submit
-- hasmany
+- HasMany
+- Custom validation compatible (backend)

@@ -240,7 +240,7 @@ module Submit64
           resourceId: request_params[:resourceId],
           context: request_params[:context]
         }
-        resource_data_renew, _form_renew = submit64_get_form_metadata_and_data(params_for_form)
+        resource_data_renew = submit64_get_form_metadata_and_data(params_for_form)[:resource_data]
       else
         errors = resource_instance.errors.details.deep_dup
 

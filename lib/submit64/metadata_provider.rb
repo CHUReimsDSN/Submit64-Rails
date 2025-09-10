@@ -257,7 +257,7 @@ module Submit64
         end
         keys_to_rename.each do |key_to_rename, renamed_key|
           errors[renamed_key] = errors[key_to_rename]
-          errors.delete[key_to_rename]
+          errors.delete[(key_to_rename)
         end
 
         # Project errors hash to string

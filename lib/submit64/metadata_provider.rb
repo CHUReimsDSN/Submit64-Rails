@@ -633,7 +633,7 @@ module Submit64
       {
         backend_date_format: form[:backend_date_format],
         backend_datetime_format: form[:backend_datetime_format],
-        use_model_validations?: form[:use_model_validations?],
+        use_model_validations?: form[:use_model_validations],
       }
     end
 

@@ -54,7 +54,9 @@ module Submit64
     begin
       yield
     rescue => e
-      raise Submit64Exception.new_with_prefix("An error has occured : #{e}", 500)
+      exception = Submit64Exception.new_with_prefix("An error has occured : #{e}", 500)
+      exception.set_backtrace(e.backtrace)
+      raise exception
     end
   end
 

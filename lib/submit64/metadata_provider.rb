@@ -232,12 +232,15 @@ module Submit64
       errors = []
       resource_id = resource_instance.id || nil
       if !perform_validation || resource_instance.valid?
-        resource_instance.save(validate: false) # Avoid double checks, .valid? already does it
+        # Avoid double checks, .valid? already does it
+        # May raise exception from active record callbacks
+        # Not Submit64 responsability, it will be catch and display
+        resource_instance.save!(validate: false)
         success = true
         resource_id = resource_instance.id
         params_for_form = {
           resourceName: request_params[:resourceName],
-          resourceId: request_params[:resourceId],
+          resourceId: resource_id,
           context: request_params[:context]
         }
         resource_data_renew = submit64_get_form_metadata_and_data(params_for_form)[:resource_data]

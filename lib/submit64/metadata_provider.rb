@@ -261,9 +261,12 @@ module Submit64
         end
 
         # Project errors hash to string
-        errors.values.each do |value|
-          value = value.map(&:error)
-        end
+        errors = errors.map do |error_key, error_value|
+          error_string = error_value.map do |error_hash_map|
+            error_hash_map[:error]
+          end
+          [error_key, error_string]
+        end.to_h
 
       end
       {

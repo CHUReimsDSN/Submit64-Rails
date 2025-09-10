@@ -242,7 +242,7 @@ module Submit64
         }
         resource_data_renew, _form_renew = submit64_get_form_metadata_and_data(params_for_form)
       else
-        errors = resource_instance.errors.details
+        errors = resource_instance.errors.details.deep_dup
 
         # Replace key for belongs_to
         keys_to_rename = {}

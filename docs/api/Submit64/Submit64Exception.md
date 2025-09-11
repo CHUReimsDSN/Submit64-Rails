@@ -1,3 +1,10 @@
+---
+title: Submit64Exception
+parent: API
+layout: default
+has_children: false
+nav_order: 1
+---
 # Submit64::Submit64Exception
 
 

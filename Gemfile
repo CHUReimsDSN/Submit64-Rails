@@ -15,4 +15,6 @@ end
 group :docs do
   gem "jekyll"
   gem "webrick"
+  gem "just-the-docs"
+  gem "kramdown-parser-gfm"
 end

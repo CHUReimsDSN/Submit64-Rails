@@ -62,13 +62,24 @@ GEM
       rouge (>= 1.7, < 4)
       safe_yaml (~> 1.0)
       webrick (>= 1.0)
+    jekyll-include-cache (0.2.1)
+      jekyll (>= 3.7, < 5.0)
     jekyll-sass-converter (1.5.2)
       sass (~> 3.4)
+    jekyll-seo-tag (2.8.0)
+      jekyll (>= 3.8, < 5.0)
     jekyll-watch (2.2.1)
       listen (~> 3.0)
     json (2.13.2)
+    just-the-docs (0.10.1)
+      jekyll (>= 3.8.5)
+      jekyll-include-cache
+      jekyll-seo-tag (>= 2.0)
+      rake (>= 12.3.1)
     kramdown (2.5.1)
       rexml (>= 3.3.9)
+    kramdown-parser-gfm (1.1.0)
+      kramdown (~> 2.0)
     language_server-protocol (3.17.0.5)
     lint_roller (1.1.0)
     liquid (4.0.4)
@@ -135,6 +146,8 @@ PLATFORMS
 
 DEPENDENCIES
   jekyll
+  just-the-docs
+  kramdown-parser-gfm
   rake (~> 13.0)
   rbs
   rubocop (~> 1.21)

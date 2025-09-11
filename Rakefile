@@ -1,8 +1,52 @@
-# frozen_string_literal: true
+require "yard"
+require "fileutils"
 
-require "bundler/gem_tasks"
-require "rubocop/rake_task"
+desc "Génère la documentation API en Markdown pour Just the Docs"
+task :docs do
+  YARD::Registry.load!
 
-RuboCop::RakeTask.new
+  YARD::Registry.all(:class, :module).each do |obj|
+    path = "docs/api/#{obj.path.gsub('::', '/')}.md"
+    FileUtils.mkdir_p(File.dirname(path))
 
-task default: :rubocop
+    title = obj.path.split("::").last
+
+    File.open(path, "w") do |f|
+      f.puts <<~YAML
+        ---
+        title: #{title}
+        parent: API
+        layout: default
+        has_children: false
+        nav_order: 1
+        ---
+      YAML
+
+      # --- Contenu ---
+      f.puts "# #{obj.path}"
+      f.puts
+      f.puts obj.docstring
+      f.puts
+
+      obj.meths.each do |m|
+        f.puts "## #{m.name}"
+        f.puts m.docstring
+        f.puts
+      end
+    end
+  end
+
+  File.open("docs/api.md", "w") do |f|
+    f.puts <<~YAML
+      ---
+      title: API
+      has_children: true
+      nav_order: 100
+      ---
+    YAML
+    f.puts "# API"
+    f.puts
+    f.puts "Documentation de l’API générée automatiquement."
+  end
+  puts "✅ Documentation générée dans docs/api/"
+end

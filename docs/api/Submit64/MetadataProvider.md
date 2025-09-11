@@ -1,3 +1,10 @@
+---
+title: MetadataProvider
+parent: API
+layout: default
+has_children: false
+nav_order: 1
+---
 # Submit64::MetadataProvider
 
 

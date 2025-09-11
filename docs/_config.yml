@@ -1,10 +1,5 @@
-title: "Submit64"
-description: "Documentation API"
-theme: minima
+title: "Submit64-Rails"
+description: "Documentation"
+theme: "just-the-docs"
 markdown: kramdown
-
-nav:
-  - Accueil: index.md
-  - API:
-      - MetadataProvider: api/MetadataProvider.md
-      - Submit64Exception: api/Submit64Exception.md
+color_scheme: dark

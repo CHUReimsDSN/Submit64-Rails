@@ -7,7 +7,6 @@ module Submit64
       resourceName: String,
     } & Hash[String, untyped]
 
-  self.@current_user: instance | nil
   self.@settings: {
       always_exclude: Array[Symbol]
     }

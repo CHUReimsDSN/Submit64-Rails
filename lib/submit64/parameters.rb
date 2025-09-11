@@ -1,5 +1,4 @@
 module Submit64
-  @current_user = nil
   @settings = {
     always_exclude: [
       :id,
@@ -11,7 +10,6 @@ module Submit64
   }
 
   class << self
-    attr_accessor :current_user
     attr_accessor :settings
   end
 

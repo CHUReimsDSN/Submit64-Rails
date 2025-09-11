@@ -584,7 +584,9 @@ module Submit64
         backend_date_format: 'YYYY-MM-DD',
         backend_datetime_format: 'YYYY-MM-DDTHH:MM:SSZ',
         resource_name: self.to_s,
-        css_class: ''
+        css_class: '',
+        resetable: false,
+        clearable: false
       }
     end
 
@@ -615,7 +617,7 @@ module Submit64
       section_index_to_purge = []
       form_metadata[:sections].each_with_index do |section, index_section|
         if section[:statement]
-          result_section_statement = section[:statement].call(Submit64.current_user)
+          result_section_statement = section[:statement].call
           if !result_section_statement
             section_index_to_purge << index_section
             next
@@ -624,7 +626,7 @@ module Submit64
         field_index_to_purge = []
         section[:fields].each_with_index do |field, index_field|
           if field[:statement]
-            result_field_statement = field[:statement].call(Submit64.current_user)
+            result_field_statement = field[:statement].call
             if !result_field_statement
               field_index_to_purge << index_field
               next

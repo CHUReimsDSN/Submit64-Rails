@@ -35,7 +35,7 @@ module Submit64
 
     def submit64_get_association_data(request_params)
       unless self < ActiveRecord::Base
-        raise Submit64Exception("Method must be called from ActiveRecord::Base inherited class", 400)
+        raise Submit64Exception.new("Method must be called from ActiveRecord::Base inherited class", 400)
       end
       context = request_params[:context]
       if context != nil
@@ -131,7 +131,7 @@ module Submit64
       end
       request_params[:resourceData].keys.each do |resource_key|
         if flatten_fields.exclude? resource_key
-          raise Submit64Exception("You are not allowed to edit this attribut: #{resource_key}", 401)
+          raise Submit64Exception.new("You are not allowed to edit this attribut: #{resource_key}", 401)
         end
       end
 

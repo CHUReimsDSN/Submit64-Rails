@@ -1,0 +1,10 @@
+title: "Submit64"
+description: "Documentation API"
+theme: minima
+markdown: kramdown
+
+nav:
+  - Accueil: index.md
+  - API:
+      - MetadataProvider: api/MetadataProvider.md
+      - Submit64Exception: api/Submit64Exception.md

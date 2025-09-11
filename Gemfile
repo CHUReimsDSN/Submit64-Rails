@@ -11,3 +11,8 @@ group :development do
   gem "rubocop", "~> 1.21"
   gem "yard"
 end
+
+group :docs do
+  gem "jekyll"
+  gem "webrick"
+end

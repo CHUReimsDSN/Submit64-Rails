@@ -19,112 +19,7 @@ module Submit64
       else
         context = {}
       end
-
-      # First sructuration
-      default_form_metadata = {
-        sections: [],
-        use_model_validations: true,
-        has_global_custom_validation: false,
-        backend_date_format: 'YYYY-MM-DD',
-        backend_datetime_format: 'YYYY-MM-DDTHH:MM:SSZ',
-        resource_name: self.to_s,
-        css_class: ''
-      }
-      form_metadata = submit64_try_model_method_with_context(self, :submit64_form_builder, context)
-      if form_metadata.nil?
-        form_metadata = default_form_metadata
-      else
-        form_metadata = default_form_metadata.merge(form_metadata)
-      end
-
-      # Early projection for lazy definition
-      form_metadata[:sections].each do |section_each|
-        section_each[:fields] = section_each[:fields].map do |field_map|
-          if field_map.class == Symbol
-            {
-              target: field_map
-            }
-          else
-            field_map
-          end
-        end
-      end
-
-      # Filters
-      section_index_to_purge = []
-      form_metadata[:sections].each_with_index do |section, index_section|
-        if section[:statement]
-          result_section_statement = section[:statement].call(Submit64.current_user)
-          if !result_section_statement
-            section_index_to_purge << index_section
-            next
-          end
-        end
-        field_index_to_purge = []
-        section[:fields].each_with_index do |field, index_field|
-          if field[:statement]
-            result_field_statement = field[:statement].call(Submit64.current_user)
-            if !result_field_statement
-              field_index_to_purge << index_field
-              next
-            end
-          end
-          if !field[:target].nil?
-            if self.columns_hash[field[:target].to_s].nil? && self.reflect_on_association(field[:target]).nil?
-              field_index_to_purge << index_field
-            end
-          else
-            field_index_to_purge << index_field
-          end
-        end
-        section[:fields] = section[:fields].select.with_index do |_field, index_select|
-          field_index_to_purge.exclude?(index_select)
-        end
-      end
-      form_metadata[:sections] = form_metadata[:sections].select do |section, index_section|
-        section_index_to_purge.exclude?(index_section) && section[:fields].count > 0
-      end
-
-      # Projection
-      form_metadata[:sections] = form_metadata[:sections].map do |section_map|
-        fields = section_map[:fields].map do |field_map|
-          association = self.reflect_on_association(field_map[:target])
-          if association.nil?
-            field_type = self.submit64_get_column_type_by_sgbd_type(columns_hash[field_map[:target].to_s].type)
-            form_field_type = self.submit64_get_form_field_type_by_column_type(field_type)
-            form_rules = self.submit64_get_column_rules(field_map, field_type, form_metadata, context[:name])
-            form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
-            field_name = field_map[:target]
-            field_association_name = nil
-            field_association_class = nil
-          else
-            field_name = association.foreign_key
-            form_field_type = self.submit64_get_form_field_type_by_association(association)
-            field_type = self.submit64_get_column_type_by_sgbd_type(columns_hash[field_name.to_s].type)
-            form_rules = self.submit64_get_column_rules(field_map, field_type, form_metadata, context[:name])
-            form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
-            field_association_name = association.name
-            field_association_class = association.klass.to_s
-          end
-          {
-            field_name: field_name,
-            field_type: form_field_type,
-            label: field_map[:label] || self.submit64_beautify_target(field_map[:target]),
-            field_association_name: field_association_name,
-            field_association_class: field_association_class,
-            hint: field_map[:hint],
-            rules: form_rules,
-            select_options: form_select_options,
-            css_class: field_map[:css_class],
-          }
-        end
-        {
-          fields: fields,
-          label: section_map[:label],
-          icon: section_map[:icon],
-          css_class: section_map[:css_class]
-        }
-      end
+      form_metadata = self.submit64_get_form(context)
 
       if request_params[:resourceId]
         resource_data, form_metadata = submit64_get_resource_data(form_metadata, request_params, context)
@@ -225,16 +120,49 @@ module Submit64
       if resource_instance.nil?
         raise Submit64Exception("Resource #{request_params[:resourceName]} with id #{request_params[:resourceId]} does not exist", 404)
       end
-      resource_instance.assign_attributes(request_params[:resourceData])
+
+      # Check for not allowed attribute
+      form = self.submit64_get_form(context)
+      flatten_fields = []
+      form[:sections].each do |section|
+        section[:fields].each do |field|
+          association_name = field[:field_association_name]
+          if association_name.nil?
+            field[:target] << flatten_fields
+          else
+            if field[:field_type] == "selectBelongsTo"
+              field[:target] << self.reflect_on_association(association_name).foreign_key.to_sym
+            end
+          end
+        end
+      end
+      request_params[:resourceData].keys.each do |resource_key|
+        if flatten_fields.exclude? resource_key
+          raise Submit64Exception("You are not allowed to edit this attribut: #{resource_key}", 401)
+        end
+      end
+
       form = submit64_get_shallow_form_config(context)
-      perform_validation = form[:use_model_validations] == true
+      skip_validation = form[:use_model_validations] == false
       success = false
-      errors = []
+      error_messages = []
       resource_id = resource_instance.id || nil
-      if !perform_validation || resource_instance.valid?
+
+      # Valid each attributs
+      is_valid = true
+      if !skip_validation
+        resource_instance.assign_attributes(request_params[:resourceData])
+        request_params[:resourceData].keys.each do |resource_key|
+          if !resource_instance.submit64_valid_attribute?(resource_key)
+            is_valid = false
+            break
+          end
+        end
+      end
+
+      if skip_validation || is_valid
         # Avoid double checks, .valid? already does it
-        # May raise exception from active record callbacks
-        # Not Submit64 responsability, it will be catch and display
+        # May raise exception from active record callbacks, not Submit64 responsability
         resource_instance.save!(validate: false)
         success = true
         resource_id = resource_instance.id
@@ -245,12 +173,12 @@ module Submit64
         }
         resource_data_renew = submit64_get_form_metadata_and_data(params_for_form)[:resource_data]
       else
-        errors = resource_instance.errors.details.deep_dup
+        error_messages = resource_instance.errors.details.deep_dup
 
         # Replace key for belongs_to
         keys_to_rename = {}
         columns = self.column_names
-        errors.keys.each do |key|
+        error_messages.keys.each do |key|
           if columns.exclude?(key.to_s)
             association = self.reflect_on_association(key)
             if association != nil && association.class.to_s.demodulize == "BelongsToReflection"
@@ -259,12 +187,12 @@ module Submit64
           end
         end
         keys_to_rename.each do |key_to_rename, renamed_key|
-          errors[renamed_key] = errors[key_to_rename]
-          errors.delete(key_to_rename)
+          error_messages[renamed_key] = error_messages[key_to_rename]
+          error_messages.delete(key_to_rename)
         end
 
         # Project errors hash to string
-        errors = errors.map do |error_key, error_value|
+        error_messages = error_messages.map do |error_key, error_value|
           error_string = error_value.map do |error_hash_map|
             error_hash_map[:error]
           end
@@ -276,7 +204,7 @@ module Submit64
         success: success,
         resource_id: resource_id,
         resource_data: resource_data_renew,
-        errors: errors
+        errors: error_messages
       }
     end
 
@@ -649,11 +577,7 @@ module Submit64
     end
 
     def submit64_get_shallow_form_config(context)
-      default_form = {
-        use_model_validations: true,
-        backend_date_format: 'YYYY-MM-DD',
-        backend_datetime_format: 'YYYY-MM-DDTHH:MM:SSZ',
-      }
+      default_form = self.class.submit64_get_default_form
       form = submit64_try_model_method_with_context(self, :submit64_form_builder, context)
       if form.nil?
         form = default_form
@@ -665,6 +589,127 @@ module Submit64
         backend_datetime_format: form[:backend_datetime_format],
         use_model_validations: form[:use_model_validations],
       }
+    end
+
+    def self.submit64_get_default_form
+      {
+        sections: [],
+        use_model_validations: true,
+        has_global_custom_validation: false,
+        backend_date_format: 'YYYY-MM-DD',
+        backend_datetime_format: 'YYYY-MM-DDTHH:MM:SSZ',
+        resource_name: self.class.to_s,
+        css_class: ''
+      }
+    end
+
+    def submit64_get_form(context)
+      # First sructuration
+      default_form_metadata = self.class.submit64_get_default_form
+      form_metadata = submit64_try_model_method_with_context(self, :submit64_form_builder, context)
+      if form_metadata.nil?
+        form_metadata = default_form_metadata
+      else
+        form_metadata = default_form_metadata.merge(form_metadata)
+      end
+
+      # Early projection for lazy definition
+      form_metadata[:sections].each do |section_each|
+        section_each[:fields] = section_each[:fields].map do |field_map|
+          if field_map.class == Symbol
+            {
+              target: field_map
+            }
+          else
+            field_map
+          end
+        end
+      end
+
+      # Filters
+      section_index_to_purge = []
+      form_metadata[:sections].each_with_index do |section, index_section|
+        if section[:statement]
+          result_section_statement = section[:statement].call(Submit64.current_user)
+          if !result_section_statement
+            section_index_to_purge << index_section
+            next
+          end
+        end
+        field_index_to_purge = []
+        section[:fields].each_with_index do |field, index_field|
+          if field[:statement]
+            result_field_statement = field[:statement].call(Submit64.current_user)
+            if !result_field_statement
+              field_index_to_purge << index_field
+              next
+            end
+          end
+          if !field[:target].nil?
+            if self.columns_hash[field[:target].to_s].nil? && self.reflect_on_association(field[:target]).nil?
+              field_index_to_purge << index_field
+            end
+          else
+            field_index_to_purge << index_field
+          end
+        end
+        section[:fields] = section[:fields].select.with_index do |_field, index_select|
+          field_index_to_purge.exclude?(index_select)
+        end
+      end
+      form_metadata[:sections] = form_metadata[:sections].select do |section, index_section|
+        section_index_to_purge.exclude?(index_section) && section[:fields].count > 0
+      end
+
+      # Projection
+      form_metadata[:sections] = form_metadata[:sections].map do |section_map|
+        fields = section_map[:fields].map do |field_map|
+          association = self.reflect_on_association(field_map[:target])
+          if association.nil?
+            field_type = self.submit64_get_column_type_by_sgbd_type(columns_hash[field_map[:target].to_s].type)
+            form_field_type = self.submit64_get_form_field_type_by_column_type(field_type)
+            form_rules = self.submit64_get_column_rules(field_map, field_type, form_metadata, context[:name])
+            form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
+            field_name = field_map[:target]
+            field_association_name = nil
+            field_association_class = nil
+          else
+            field_name = association.foreign_key
+            form_field_type = self.submit64_get_form_field_type_by_association(association)
+            field_type = self.submit64_get_column_type_by_sgbd_type(columns_hash[field_name.to_s].type)
+            form_rules = self.submit64_get_column_rules(field_map, field_type, form_metadata, context[:name])
+            form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
+            field_association_name = association.name
+            field_association_class = association.klass.to_s
+          end
+          {
+            field_name: field_name,
+            field_type: form_field_type,
+            label: field_map[:label] || self.submit64_beautify_target(field_map[:target]),
+            field_association_name: field_association_name,
+            field_association_class: field_association_class,
+            hint: field_map[:hint],
+            rules: form_rules,
+            select_options: form_select_options,
+            css_class: field_map[:css_class],
+          }
+        end
+        {
+          fields: fields,
+          label: section_map[:label],
+          icon: section_map[:icon],
+          css_class: section_map[:css_class]
+        }
+      end
+      form_metadata
+    end
+
+    def submit64_valid_attribute?(attr)
+      errors.delete(attr)
+      self.validators_on(attr).map do |v|
+        v.validate_each(self, attr, self[attr])
+      end
+      errors[attr].blank?
     end
 
   end

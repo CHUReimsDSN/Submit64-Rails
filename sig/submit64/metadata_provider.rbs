@@ -100,6 +100,7 @@ module Submit64
         resource_data: Hash[string, untyped] | nil,
       }
 
+
     def submit64_get_form_metadata_and_data: (get_metadata_params) -> get_metadata_params_response
 
     def submit64_get_association_data: (get_association_data) -> get_association_data_response
@@ -129,6 +130,12 @@ module Submit64
     def submit64_try_row_method_with_context: (untyped, Symbol, context) -> untyped
 
     def submit64_get_shallow_form_config: (context) -> shallowForm
+
+    def submit64_get_form: (context) -> hashForm
+
+    def submit64_valid_attribute?:(Symbol) -> bool
+
+    def self.submit64_get_default_form: -> hashForm
 
   end
 

@@ -1,2 +1,3 @@
 - HasMany
 - Custom validation compatible (backend)
+- Strategy system for lazy_validation or global_validation (currently lazy)

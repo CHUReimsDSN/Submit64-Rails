@@ -12,9 +12,8 @@ group :development do
   gem "yard"
 end
 
-group :docs do
-  gem "jekyll"
-  gem "webrick"
-  gem "just-the-docs"
-  gem "kramdown-parser-gfm"
-end
+# Docs
+gem "jekyll"
+gem "webrick"
+gem "just-the-docs"
+gem "kramdown-parser-gfm"

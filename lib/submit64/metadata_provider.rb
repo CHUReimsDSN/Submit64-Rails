@@ -698,11 +698,11 @@ module Submit64
     end
 
     def submit64_valid_attribute?(resource_instance, attr)
-      errors.delete(attr)
+      resource_instance.errors.delete(attr)
       resource_instance.validators_on(attr).map do |v|
         v.validate_each(resource_instance, attr, resource_instance[attr])
       end
-      errors[attr].blank?
+      resource_instance.errors[attr].blank?
     end
 
   end

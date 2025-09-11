@@ -126,7 +126,7 @@ module Submit64
       flatten_fields = []
       form[:sections].each do |section|
         section[:fields].each do |field|
-          flatten_fields << field[:field_name]
+          flatten_fields << field[:field_name].to_s
         end
       end
       request_params[:resourceData].keys.each do |resource_key|

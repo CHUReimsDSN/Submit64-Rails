@@ -74,6 +74,7 @@ GEM
       unicode-emoji (~> 4.0, >= 4.0.4)
     unicode-emoji (4.0.4)
     uri (1.0.3)
+    yard (0.9.37)
 
 PLATFORMS
   ruby
@@ -84,6 +85,7 @@ DEPENDENCIES
   rbs
   rubocop (~> 1.21)
   submit64!
+  yard
 
 BUNDLED WITH
    2.6.5

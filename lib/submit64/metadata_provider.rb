@@ -577,7 +577,7 @@ module Submit64
     end
 
     def submit64_get_shallow_form_config(context)
-      default_form = self.class.submit64_get_default_form
+      default_form = self.submit64_get_default_form
       form = submit64_try_model_method_with_context(self, :submit64_form_builder, context)
       if form.nil?
         form = default_form
@@ -591,7 +591,7 @@ module Submit64
       }
     end
 
-    def self.submit64_get_default_form
+    def submit64_get_default_form
       {
         sections: [],
         use_model_validations: true,
@@ -605,7 +605,7 @@ module Submit64
 
     def submit64_get_form(context)
       # First sructuration
-      default_form_metadata = self.class.submit64_get_default_form
+      default_form_metadata = self.submit64_get_default_form
       form_metadata = submit64_try_model_method_with_context(self, :submit64_form_builder, context)
       if form_metadata.nil?
         form_metadata = default_form_metadata

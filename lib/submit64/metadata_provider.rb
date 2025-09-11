@@ -146,7 +146,7 @@ module Submit64
       if !skip_validation
         resource_instance.assign_attributes(request_params[:resourceData])
         request_params[:resourceData].keys.each do |resource_key|
-          if !resource_instance.submit64_valid_attribute?(resource_key)
+          if !submit64_valid_attribute?(resource_instance, resource_key)
             is_valid = false
             break
           end
@@ -697,10 +697,10 @@ module Submit64
       form_metadata
     end
 
-    def submit64_valid_attribute?(attr)
+    def submit64_valid_attribute?(resource_instance, attr)
       errors.delete(attr)
-      self.validators_on(attr).map do |v|
-        v.validate_each(self, attr, self[attr])
+      resource_instance.validators_on(attr).map do |v|
+        v.validate_each(resource_instance, attr, resource_instance[attr])
       end
       errors[attr].blank?
     end

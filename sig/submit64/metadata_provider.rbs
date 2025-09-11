@@ -133,7 +133,7 @@ module Submit64
 
     def submit64_get_form: (context) -> hashForm
 
-    def submit64_valid_attribute?:(Symbol) -> bool
+    def submit64_valid_attribute?:(instance, Symbol) -> bool
 
     def submit64_get_default_form: -> hashForm
 

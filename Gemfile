@@ -2,6 +2,7 @@
 
 source "https://rubygems.org"
 
+# Specify your gem's dependencies in submit64.gemspec
 gemspec
 
 gem "rake", "~> 13.0"
@@ -11,8 +12,9 @@ group :development do
   gem "yard"
 end
 
-# Docs engine & theme
-gem "jekyll"
-gem "webrick"
-gem "just-the-docs"
-gem "kramdown-parser-gfm"
+group :docs do
+  gem "jekyll"
+  gem "webrick"
+  gem "just-the-docs"
+  gem "kramdown-parser-gfm"
+end

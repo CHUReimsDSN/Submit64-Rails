@@ -5,5 +5,5 @@ bundle exec rake docs
 # run doc server
 bundle exec jekyll serve --source docs
 
-# build doc
+# build doc for github actions
 bundle exec jekyll build --source docs --destination _site

@@ -3,3 +3,4 @@ description: "Documentation"
 theme: just-the-docs
 markdown: kramdown
 color_scheme: dark
+baseurl: "/Submit64-Rails"

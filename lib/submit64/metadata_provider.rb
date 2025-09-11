@@ -126,14 +126,7 @@ module Submit64
       flatten_fields = []
       form[:sections].each do |section|
         section[:fields].each do |field|
-          association_name = field[:field_association_name]
-          if association_name.nil?
-            field[:target] << flatten_fields
-          else
-            if field[:field_type] == "selectBelongsTo"
-              field[:target] << self.reflect_on_association(association_name).foreign_key.to_sym
-            end
-          end
+          flatten_fields << field[:field_name]
         end
       end
       request_params[:resourceData].keys.each do |resource_key|

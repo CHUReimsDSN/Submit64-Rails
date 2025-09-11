@@ -166,7 +166,7 @@ module Submit64
         }
         resource_data_renew = submit64_get_form_metadata_and_data(params_for_form)[:resource_data]
       else
-        error_messages = resource_instance.errors.details.deep_dup
+        error_messages = resource_instance.errors.messages.deep_dup
 
         # Replace key for belongs_to
         keys_to_rename = {}
@@ -183,14 +183,6 @@ module Submit64
           error_messages[renamed_key] = error_messages[key_to_rename]
           error_messages.delete(key_to_rename)
         end
-
-        # Project errors hash to string
-        error_messages = error_messages.map do |error_key, error_value|
-          error_string = error_value.map do |error_hash_map|
-            error_hash_map[:error]
-          end
-          [error_key, error_string]
-        end.to_h
 
       end
       {

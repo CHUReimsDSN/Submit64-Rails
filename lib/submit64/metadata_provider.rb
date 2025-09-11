@@ -284,7 +284,7 @@ module Submit64
 
     def submit64_get_resource_data(form_metadata, request_params, context)
       relations_to_include = []
-      columns_to_select = []
+      columns_to_select = [self.primary_key.to_sym]
       form_metadata[:sections].each do |section|
         section[:fields].each do |field|
           if field[:field_association_name] != nil

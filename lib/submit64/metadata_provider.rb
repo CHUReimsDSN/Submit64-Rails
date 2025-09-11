@@ -5,13 +5,13 @@ module Submit64
   module MetadataProvider
     def self.extended(base)
       unless base < ActiveRecord::Base
-        raise Submit64Exception("#{base} must inherit from ActiveRecord::Base to extend Submit64::MetadataProvider", 400)
+        raise Submit64Exception.new("#{base} must inherit from ActiveRecord::Base to extend Submit64::MetadataProvider", 400)
       end
     end
 
     def submit64_get_form_metadata_and_data(request_params)
       unless self < ActiveRecord::Base
-        raise Submit64Exception("Method must be called from ActiveRecord::Base inherited class", 400)
+        raise Submit64Exception.new("Method must be called from ActiveRecord::Base inherited class", 400)
       end
       context = request_params[:context]
       if context != nil
@@ -103,7 +103,7 @@ module Submit64
 
     def submit64_get_submit_data(request_params)
       unless self < ActiveRecord::Base
-        raise Submit64Exception("Method must be called from ActiveRecord::Base inherited class", 400)
+        raise Submit64Exception.new("Method must be called from ActiveRecord::Base inherited class", 400)
       end
       context = request_params[:context]
       if context != nil
@@ -118,7 +118,7 @@ module Submit64
         resource_instance = self.find(request_params[:resourceId])
       end
       if resource_instance.nil?
-        raise Submit64Exception("Resource #{request_params[:resourceName]} with id #{request_params[:resourceId]} does not exist", 404)
+        raise Submit64Exception.new("Resource #{request_params[:resourceName]} with id #{request_params[:resourceId]} does not exist", 404)
       end
 
       # Check for not allowed attribute

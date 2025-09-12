@@ -1,7 +1,7 @@
 ---
 title: Installation
 layout: default
-nav_order: 2
+nav_order: 30
 ---
 # Installation
 
@@ -12,4 +12,12 @@ gem 'submit64', git: 'git@github.com:CHUReimsDSN/Submit64-Rails.git'
 
 ```sh
 bundle install
+```
+
+
+## Cibler une branche spécifique
+
+``` ruby
+# Gemfile
+gem 'submit64', git: 'git@github.com:CHUReimsDSN/Submit64-Rails.git#nom_de_la_branche'
 ```

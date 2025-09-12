@@ -42,7 +42,7 @@ task :docs do
       title: API
       layout: default
       has_children: true
-      nav_order: 100
+      nav_order: 1000
       ---
     YAML
     f.puts "# API"

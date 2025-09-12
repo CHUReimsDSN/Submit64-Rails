@@ -528,9 +528,6 @@ module Submit64
       if row.respond_to?(:label)
         return row.method(:label).call.to_s
       end
-      if row.respond_to?(:to_string)
-        return row.method(:to_string).call.to_s
-      end
       if row.respond_to?(:to_s)
         return row.method(:to_s).call.to_s
       end

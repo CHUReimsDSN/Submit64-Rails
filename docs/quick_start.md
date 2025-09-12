@@ -1,7 +1,7 @@
 ---
 title: Démarage rapide
 layout: default
-nav_order: 3
+nav_order: 40
 ---
 # Démarrage rapide
 
@@ -9,9 +9,7 @@ nav_order: 3
 Activer l'exploitation des données pour un modèle :
 
 ``` ruby
-# La classe doit hériter de ActiveRecord::Base (ou enfant)
-
-class MonModele < ActiveRecord::Base
+class MonModele < ApplicationRecord
   extend Submit64::MetadataProvider
 
   def self.submit64_form_builder
@@ -24,21 +22,23 @@ class MonModele < ActiveRecord::Base
 end
 ```
 
-
-Obtenir les résultats :
+Obtenir les informations via un contrôleur :
 ```ruby
-# Dans le contexte où l'on reçoit les paramètres AgGrid dans un controller
 class MyController < ApplicationController
 
-  # POST /my-api/get-metadata
-  def get_resource_metadata
-    render json: Query64.get_metadata(Query64.permit_metadata_params(params))
+  # POST /my-api/get-metadata-and-data-submit64
+  def get_metadata_and_data_submit64
+    render json: Submit64.get_metadata_and_data(Submit64.permit_metadata_and_data_params(params))
   end
 
-  # POST /my-api/get-rows
-  def get_rows
-    render json: Query64.get_rows(Query64.permit_row_params(params))
+  # POST /my-api/get-association-data-submit64
+  def get_association_data_submit64
+    render json: Submit64.get_association_data(Submit64.permit_association_data_params(params))
   end
 
+  # POST /my-api/get-submit-data-submit64
+  def get_submit_data_submit64
+    render json: Submit64.submit_form(Submit64.permit_submit_params(params))
+  end
 end
 ```

@@ -23,6 +23,9 @@ jobs:
       - name: Generate API Markdown
         run: ruby scripts/generate_api_doc.rb
 
+      - name: Install repo dependencies
+        run: bundle install
+
       - name: Install Jekyll & Themes
         run: |
           gem install jekyll webrick just-the-docs kramdown-parser-gfm

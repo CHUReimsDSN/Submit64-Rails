@@ -15,16 +15,15 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.3'
+          ruby-version: '3.2'
 
       - name: Install Bundler & Gems
         run: |
           gem install bundler
-          bundle install --gemfile=.github/workflows/Gemfile.docs
-        
+          bundle install --gemfile=.github/workflows/Gemfile.docs --path vendor/bundle
 
       - name: Generate API Markdown
-        run: ruby scripts/generate_api_doc.rb
+        run: bundle exec ruby scripts/generate_api_doc.rb
 
       - name: Build Jekyll site
         run: bundle exec jekyll build --source docs --destination _site

@@ -29,7 +29,7 @@ jobs:
           bundle install --gemfile=.github/workflows/Gemfile.docs
 
       - name: Build Jekyll site
-        run: jekyll build --source docs --destination _site
+        run: bundle exec jekyll build --source docs --destination _site
 
       - name: Upload site artifact
         uses: actions/deploy-pages@v4

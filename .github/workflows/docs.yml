@@ -15,18 +15,18 @@ jobs:
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.3'
+          ruby-version: '3.2'
 
       - name: Install YARD
         run: gem install yard rake
-
-      - name: Generate API Markdown
-        run: ruby scripts/generate_api_doc.rb
 
       - name: Install Jekyll & Themes
         run: |
           gem install bundler
           bundle install --gemfile=.github/workflows/Gemfile.docs
+
+      - name: Generate API Markdown
+        run: bundle exec ruby scripts/generate_api_doc.rb
 
       - name: Build Jekyll site
         run: bundle exec jekyll build --source docs --destination _site

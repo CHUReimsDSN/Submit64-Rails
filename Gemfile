@@ -1,9 +1,4 @@
-# frozen_string_literal: true# Docs engine & theme
-gem "jekyll"
-gem "webrick"
-gem "just-the-docs"
-gem "kramdown-parser-gfm"
-
+# frozen_string_literal: true
 
 source "https://rubygems.org"
 

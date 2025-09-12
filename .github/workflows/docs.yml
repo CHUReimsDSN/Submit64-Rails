@@ -21,10 +21,10 @@ jobs:
         run: bundle install --gemfile=.github/workflows/Gemfile.docs
 
       - name: Generate API Markdown
-        run: bundle exec ruby scripts/generate_api_doc.rb
+        run: bundle exec --gemfile=.github/workflows/Gemfile.docs ruby scripts/generate_api_doc.rb
 
       - name: Build Jekyll site
-        run: bundle exec jekyll build --source docs --destination _site
+        run: bundle exec --gemfile=.github/workflows/Gemfile.docs jekyll build --source docs --destination _site
 
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3

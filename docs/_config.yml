@@ -4,3 +4,20 @@ theme: just-the-docs
 markdown: kramdown
 color_scheme: dark
 baseurl: "/Submit64-Rails"
+mermaid:
+  version: "9.1.3"
+callouts:
+  warning:
+    title: Attention
+    color: red
+  important:
+    title: Important
+    color: blue
+  highlight:
+    color: yellow
+  new:
+    title: Nouveau
+    color: green
+  note:
+    title: Note
+    color: purple

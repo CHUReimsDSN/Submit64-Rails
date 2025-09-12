@@ -1,5 +1,5 @@
 ---
-title: Installation
+title: Définition d'un formulaire
 layout: default
 nav_order: 5
 ---
@@ -38,7 +38,7 @@ Les options suivantes sont disponibles :
 - clearable: bool = false -> Permet de supprimé les valeurs du formulaire coté client
 
 **SectionHash** :
-- fields: FieldHash[] || Symbol[] = [] -> Définition des champs
+- fields: FieldHash[] `||` Symbol[] = [] -> Définition des champs
 - label: string = nil -> Défini un titre à la section
 - icon: string = nil -> Défini un icon à la section
 - css_class: string = '' -> Classe css sur la section
@@ -81,5 +81,6 @@ def self.submit64_form_builder(context)
 end
 ```
 
-**Note** : ne pas se baser sur le contexte pour définir des politiques de sécurités, le 
+{: .warning }
+Ne pas se baser sur le contexte pour définir des politiques de sécurités, le 
 contexte vient du client dans son intégralité.

@@ -40,6 +40,7 @@ task :docs do
     f.puts <<~YAML
       ---
       title: API
+      layout: default
       has_children: true
       nav_order: 100
       ---

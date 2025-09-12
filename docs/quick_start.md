@@ -8,7 +8,7 @@ nav_order: 40
 
 Activer l'exploitation des données pour un modèle :
 
-``` ruby
+```ruby
 class MonModele < ApplicationRecord
   extend Submit64::MetadataProvider
 
@@ -17,6 +17,7 @@ class MonModele < ApplicationRecord
       sections: [
         fields: [:nom, :prenom, :date_naissance]
       ]
+    }
   end
 
 end

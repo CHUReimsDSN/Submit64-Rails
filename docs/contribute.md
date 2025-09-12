@@ -1,5 +1,5 @@
 ---
-title: Contribuer
+title: Contribution
 layout: default
 nav_order: 9998
 ---

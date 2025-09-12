@@ -10,9 +10,3 @@ group :development do
   gem "rubocop", "~> 1.21"
   gem "yard"
 end
-
-# Docs engine & theme
-gem "jekyll"
-gem "webrick"
-gem "just-the-docs"
-gem "kramdown-parser-gfm"

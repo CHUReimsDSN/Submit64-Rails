@@ -17,17 +17,21 @@ jobs:
         with:
           ruby-version: '3.3'
 
-      - name: Install dependencies
-        run: bundle install
+      - name: Install YARD
+        run: gem install yard rake
 
-      - name: Generate API docs with YARD
-        run: bundle exec rake docs
+      - name: Generate API Markdown
+        run: ruby scripts/generate_api_doc.rb
+
+      - name: Install Jekyll & Themes
+        run: |
+          gem install jekyll webrick just-the-docs kramdown-parser-gfm
 
       - name: Build Jekyll site
-        run: bundle exec jekyll build --source docs --destination _site
+        run: jekyll build --source docs --destination _site
 
       - name: Upload site artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/deploy-pages@v4
         with:
           path: _site
 

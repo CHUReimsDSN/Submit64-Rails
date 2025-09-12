@@ -100,10 +100,8 @@ Cette méthode doit être en accord avec les colonnes définies dans
 Cette méthode ne doit pas être statique.
 
 {: .note }
-Si cette méthode n'est pas définie, Submit64 essaie les méthodes suivantes :
-- `label`
-- `to_s`
-- `primary_key`
+Si cette méthode n'est pas définie, Submit64 essaie les méthodes `label`, `to_s`, et 
+`primary_key`.
 
 {: .warning }
 Cette méthode est appelée à chaque ligne éligible à l'association. 

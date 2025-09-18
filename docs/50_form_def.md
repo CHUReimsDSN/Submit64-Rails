@@ -1,8 +1,7 @@
 ---
 title: Définition d'un formulaire
-layout: default
-nav_order: 50
 ---
+
 # Définition d'un formulaire
 
 La méthode `submit64_form_builder` permet de définir un formulaire pour un modèle donné.

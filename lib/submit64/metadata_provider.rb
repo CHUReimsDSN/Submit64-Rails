@@ -237,6 +237,8 @@ module Submit64
       case sql_type
       when :text
         field_type = 'text'
+      when :decimal
+        field_type = 'number'
       when :integer
         field_type = 'number'
       when :date

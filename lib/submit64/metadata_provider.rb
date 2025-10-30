@@ -581,7 +581,7 @@ module Submit64
         use_model_validations: true,
         has_global_custom_validation: false,
         backend_date_format: 'YYYY-MM-DD',
-        backend_datetime_format: 'YYYY-MM-DDTHH:MM:SSZ',
+        backend_datetime_format: 'YYYY-MM-DDTHH:mm:ss.SSSZ',
         resource_name: self.to_s,
         css_class: '',
         resetable: false,

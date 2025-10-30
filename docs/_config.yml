@@ -21,3 +21,6 @@ callouts:
   note:
     title: Note
     color: purple
+aux_links:
+  See on Github:
+    - https://github.com/CHUReimsDSN/Submit64-Rails

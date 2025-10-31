@@ -18,5 +18,5 @@ bundle install
 
 ``` ruby
 # Gemfile
-gem 'submit64', git: 'https://github.com/CHUReimsDSN/Submit64-Rails.git#nom_de_la_branche'
+gem 'submit64', git: 'https://github.com/CHUReimsDSN/Submit64-Rails.git', branch: 'nom_de_la_branche'
 ```

@@ -10,6 +10,24 @@ des logiques supplémentaires, comme l'affichage des données, les filtres, etc.
 {: .highlight }
 Le type de relation HasMany n'est actuellement pas pris en charge.
 
+
+## Définir un champ de relation dans le formulaire  
+
+```ruby
+class MonModele < ActiveRecord::Base
+  extend Submit64::MetadataProvider
+
+  def self.submit64_form_builder
+    {
+      sections: [
+        fields: [:nom_de_ma_relation]
+      ]
+    }
+  end
+
+end
+```
+
 ## Définir les lignes à séléctionnées
 
 Cette méthode permet de définir des filtres sur les lignes de l'association.

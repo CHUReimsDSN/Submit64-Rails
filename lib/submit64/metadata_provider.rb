@@ -531,17 +531,17 @@ module Submit64
     end
 
     def submit64_association_default_label(row)
-      if row.respond_to?(:label)
+      if row.respond_to?(:label, true)
         return row.method(:label).call.to_s
       end
-      if row.respond_to?(:to_s)
+      if row.respond_to?(:to_s, true)
         return row.method(:to_s).call.to_s
       end
       row.method(self.primary_key.to_sym).call.to_s
     end
 
     def submit64_try_model_method_with_context(class_model, method_name, context)
-      if class_model.respond_to?(method_name)
+      if class_model.respond_to?(method_name, true)
         method_found = class_model.method(method_name)
         if method_found.parameters.any?
           return method_found.call(context)
@@ -553,7 +553,7 @@ module Submit64
     end
 
     def submit64_try_row_method_with_context(row, method_name, context)
-      if row.respond_to?(method_name)
+      if row.respond_to?(method_name, true)
         method_found = row.method(method_name)
         if method_found.parameters.any?
           return method_found.call(context)

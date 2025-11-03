@@ -84,10 +84,12 @@ module Submit64
       end
       builder_row_count = builder_rows.count
       builder_rows = builder_rows.limit(limit).offset(offset).map do |row|
-        label = submit64_association_default_label(row)
+        label = ""
         custom_label = submit64_try_row_method_with_context(row, :submit64_association_label, context)
         if custom_label != nil
           label = custom_label
+        else
+          label = submit64_association_default_label(row)
         end
         {
           label: label,
@@ -221,10 +223,12 @@ module Submit64
             next
           end
           row = resource_data.method(relation).call
-          default_display_value = submit64_association_default_label(row)
+          default_display_value = ""
           custom_display_value = submit64_try_row_method_with_context(row, :submit64_association_label, context)
           if custom_display_value != nil
             default_display_value = custom_display_value
+          else
+            default_display_value = submit64_association_default_label(row)
           end
           field[:default_display_value] = default_display_value
         end

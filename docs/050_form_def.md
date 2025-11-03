@@ -24,10 +24,12 @@ class MonModele < ActiveRecord::Base
 
 end
 ```
+<br /><br /> 
 
 ## Options
 
 Les options suivantes sont disponibles : 
+<br /><br />
 
 ### FormHash :
 - `sections`: __SectionHash[] = []__ -> Définition des sections

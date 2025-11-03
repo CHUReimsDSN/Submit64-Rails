@@ -28,6 +28,9 @@ class MonModele < ActiveRecord::Base
 end
 ```
 
+<br /><br /> 
+
+
 ## Définir les lignes à séléctionnées
 
 Cette méthode permet de définir des filtres sur les lignes de l'association.
@@ -41,6 +44,9 @@ class MonModele < ActiveRecord::Base
 
 end
 ```
+
+<br /><br /> 
+
 
 ## Définir les colonnes à filtrées (pour la recherche)
 
@@ -74,6 +80,8 @@ les colonnes `id` et `label`.
 {: .note }
 Ces filtres s'appliquent **après** ceux définis par `submit64_association_filter_rows`.
 
+<br /><br /> 
+
 ## Définir les colonnes à séléctionnées
 
 La méthode `submit64_association_select_columns` permet d'éviter de sélectionner l'entièreté de
@@ -92,6 +100,8 @@ end
 
 {: .note }
 Si cette méthode n’est pas définie, Submit64 sélectionne automatiquement toutes les colonnes.
+
+<br /><br /> 
 
 ## Définir un libellé
 

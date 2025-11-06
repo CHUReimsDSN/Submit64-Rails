@@ -231,7 +231,7 @@ module Submit64
             builder_rows = builder_rows.and(custom_builder_row_filter)
           end
           relation_data =  relations_data[field[:field_name]]
-          builder_rows = builder_rows.and(association_class.where({ relation_data.association_primary_key => resource_data.method(relation_data.association_foreign_key.to_sym).call }))
+          builder_rows = builder_rows.and(association_class.where({ relation_data.association_primary_key => resource_data[relation_data.association_foreign_key] }))
 
           rows = builder_rows
           if field[:field_type] == "selectBelongsTo"

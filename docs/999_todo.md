@@ -2,8 +2,9 @@
 title: TODO
 ---
 
-# TODO
+# *TODO*
 
+- Orphelan rules system
 - HasMany
 - Custom validation compatible (backend)
 - Strategy system for lazy_validation or strict_validation (currently lazy)

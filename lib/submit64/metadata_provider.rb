@@ -302,6 +302,9 @@ module Submit64
             end
             builder_rows = builder_rows.and(association_class.where({ association_class.primary_key.to_sym => field[:default_value] }))
             row = builder_rows.first
+            if row.nil?
+              next
+            end
             default_display_value = ""
             custom_display_value = submit64_try_row_method_with_context(row, :submit64_association_label, context)
             if custom_display_value != nil

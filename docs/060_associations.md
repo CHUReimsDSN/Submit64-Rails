@@ -91,7 +91,7 @@ la ligne en base et de définir une liste arbitraire de colonnes.
 class MonModele < ActiveRecord::Base
   extend Submit64::MetadataProvider
 
-  def submit64_association_select_columns
+  def self.submit64_association_select_columns
     [:id, :libelle]
   end
 

@@ -237,6 +237,9 @@ module Submit64
           if field[:field_type] == "selectBelongsTo"
             default_display_value = ""
             row = rows.first
+            if row.nil?
+              next
+            end
             custom_display_value = submit64_try_row_method_with_context(row, :submit64_association_label, context)
             if custom_display_value != nil
               default_display_value = custom_display_value

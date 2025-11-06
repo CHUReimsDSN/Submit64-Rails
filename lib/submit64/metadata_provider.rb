@@ -244,7 +244,7 @@ module Submit64
               default_display_value = submit64_association_default_label(row)
             end
             field[:default_display_value] = default_display_value
-            resource_data[:field_name] = row[association_class.primary_key]
+            resource_data[field[:field_name]] = row[association_class.primary_key]
           elsif field[:field_type] == "selectHasMany"
             default_display_value = []
             resource_data[:field_name] = []
@@ -255,7 +255,7 @@ module Submit64
               else
                 default_display_value << submit64_association_default_label(row)
               end
-              resource_data[:field_name] << row.call(association_class.primary_key.to_sym)
+              resource_data[field[:field_name]] << row.call(association_class.primary_key.to_sym)
             end
             field[:default_display_value] = default_display_value
           end

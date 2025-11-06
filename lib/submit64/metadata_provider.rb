@@ -56,7 +56,7 @@ module Submit64
       offset = request_params[:offset] || 0
       custom_select_column = submit64_try_model_method_with_context(association_class, :submit64_association_select_columns, context)
       if custom_select_column != nil
-        builder_rows = association_class.select(custom_select_column).all
+        builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym]).all
       else
         builder_rows = association_class.all
       end
@@ -222,7 +222,7 @@ module Submit64
           association_class = field[:field_association_class]
           custom_select_column = submit64_try_model_method_with_context(association_class, :submit64_association_select_columns, context)
           if custom_select_column != nil
-            builder_rows = association_class.select(custom_select_column).all
+            builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym]).all
           else
             builder_rows = association_class.all
           end
@@ -244,7 +244,7 @@ module Submit64
               default_display_value = submit64_association_default_label(row)
             end
             field[:default_display_value] = default_display_value
-            resource_data[:field_name] = row.call(association_class.primary_key.to_sym)
+            resource_data[:field_name] = row[association_class.primary_key]
           elsif field[:field_type] == "selectHasMany"
             default_display_value = []
             resource_data[:field_name] = []
@@ -288,7 +288,7 @@ module Submit64
             association_class = field[:field_association_class]
             custom_select_column = submit64_try_model_method_with_context(association_class, :submit64_association_select_columns, context)
             if custom_select_column != nil
-              builder_rows = association_class.select(custom_select_column).all
+              builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym]).all
             else
               builder_rows = association_class.all
             end
@@ -305,13 +305,13 @@ module Submit64
             else
               default_display_value = submit64_association_default_label(row)
             end
-            default_value = row.call(association_class.primary_key.to_sym)
+            default_value = row[association_class.primary_key]
             field[:default_display_value] = default_display_value
           when 'selectHasMany'
             association_class = field[:field_association_class]
             custom_select_column = submit64_try_model_method_with_context(association_class, :submit64_association_select_columns, context)
             if custom_select_column != nil
-              builder_rows = association_class.select(custom_select_column).all
+              builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym]).all
             else
               builder_rows = association_class.all
             end
@@ -330,7 +330,7 @@ module Submit64
               else
                 default_display_value << submit64_association_default_label(row)
               end
-              default_value << row.call(association_class.primary_key.to_sym)
+              default_value << row[association_class.primary_key]
             end
             field[:default_display_value] = default_display_value
           when 'checkbox'

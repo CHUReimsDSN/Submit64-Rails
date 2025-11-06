@@ -24,30 +24,114 @@ class MonModele < ActiveRecord::Base
 
 end
 ```
+<br /><br /> 
 
 ## Options
 
-Les options suivantes sont disponibles : 
+### FormHash  
 
-### FormHash :
-- `sections`: __SectionHash[] = []__ -> Définition des sections
-- `use_model_validations`: __bool = true__ -> Utilise les validations Active Record
-- `backend_date_format`: __string = 'YYYY-MM-DD'__ -> Format des dates pour la sauvegarde
-- `backend_datetime_format`: __string = 'YYYY-MM-DDTHH:MM:SSZ'__ -> Format des datetimes pour la sauvegarde
-- `css_class`: __string = ""__ -> Classe css sur le container du formulaire
-- `resetable`: __bool = false__ -> Permet de réinitialiser les valeurs du formulaire côté client
-- `clearable`: __bool = false__ -> Permet de supprimer les valeurs du formulaire côté client
+```ruby
+# Définition des sections
+# @type SectionHash[]
+# @default []
+sections
 
-### SectionHash :
-- `fields`: __FieldHash[] \|\| Symbol[] = []__ -> Définition des champs
-- `label`: __string = nil__ -> Définit un titre à la section
-- `icon`: __string = nil__ -> Définit un icône à la section
-- `css_class`: __string = ""__ -> Classe css sur la section
-- `statement`: __() -> bool = nil__ -> Callback qui définit si la section doit être générée ou non
+# Utilise les validations Active Record
+# @type Boolean 
+# @default true
+use_model_validations
+
+# Format des dates pour la sauvegarde
+# @type String 
+# @default 'YYYY-MM-DD'
+backend_date_format
+
+# Format des datetimes pour la sauvegarde
+# @type String 
+# @default 'YYYY-MM-DDTHH:mm:ss.SSSZ'
+backend_datetime_format
+
+# Classe css sur le container du formulaire
+# @type String 
+# @default ''
+css_class
+
+# Permet de réinitialiser les valeurs du formulaire côté client
+# @type Boolean 
+# @default false
+resetable
+
+# Permet de supprimer les valeurs du formulaire côté client
+# @type Boolean 
+# @default false
+clearable
+```
+
+<br /><br /> 
+
+### SectionHash
+
+```ruby
+# Définition des champs
+# @type FieldHash[] || Symbol[]
+# @default []
+fields
+
+# Défini un titre à la section
+# @type String
+# @default nil
+label
+
+# Défini un icône à la section
+# @type String
+# @default nil
+icon
+
+# Classe css sur la section
+# @type String
+# @default ""
+css_class
+
+# Callback qui définit si la section doit être générée ou non
+# @type () -> Boolean
+# @default nil
+statement
+```
+
+<br /><br /> 
 
 ### FieldHash : 
-- `target`: __Symbol = nil__ -> Cible du champ, une colonne en base ou le nom d'une relation
-- `label`: __String = nil__ -> Nom du champ
-- `hint`: __String = nil__ -> Indice du champ
-- `css_class`: __String = nil__ -> Classe css sur le champ
-- `statement`: __() -> bool = nil__ -> Callback qui défini si le champ doit être générée ou non
+```ruby
+# Cible du champ, une colonne en base ou le nom d'une relation
+# @type Symbol
+# @default nil
+# @required
+target
+
+# Libellé du champ
+# @type String
+# @default nil
+label
+
+# Indice du champ
+# @type String
+# @default nil
+hint
+
+# Classe css sur le champ
+# @type String
+# @default nil
+css_class
+
+# Callback qui défini si le champ doit être générée ou non
+# @type () -> Boolean
+# @default nil
+statement
+
+# Valeur par défaut du champ pour le mode création
+# Pour les associations belongs_to, il faut donner la valeur de la clé étrangère
+# Pour les associations has_many, il faut donner les valeurs des clés primaires du modèle d'association
+# @type unknown
+# @default nil
+default_value
+```

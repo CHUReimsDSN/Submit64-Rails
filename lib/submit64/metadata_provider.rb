@@ -24,9 +24,8 @@ module Submit64
       if request_params[:resourceId]
         resource_data, form_metadata = submit64_get_resource_data(form_metadata, request_params, context)
       else
-        resource_data = {}
+        resource_data, form_metadata = submit64_get_default_value_data(form_metadata, context)
       end
-
       {
         form: form_metadata,
         resource_data: resource_data
@@ -57,7 +56,7 @@ module Submit64
       offset = request_params[:offset] || 0
       custom_select_column = submit64_try_model_method_with_context(association_class, :submit64_association_select_columns, context)
       if custom_select_column != nil
-        builder_rows = association_class.select(custom_select_column).all
+        builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym]).all
       else
         builder_rows = association_class.all
       end
@@ -82,7 +81,7 @@ module Submit64
         end
         builder_rows = builder_rows.and(label_filter_builder)
       end
-      builder_row_count = builder_rows.count
+      builder_row_count = builder_rows.reselect(association_class.primary_key.to_sym).count
       builder_rows = builder_rows.limit(limit).offset(offset).map do |row|
         label = ""
         custom_label = submit64_try_row_method_with_context(row, :submit64_association_label, context)
@@ -137,7 +136,6 @@ module Submit64
         end
       end
 
-      form = submit64_get_shallow_form_config(context)
       skip_validation = form[:use_model_validations] == false
       success = false
       error_messages = []
@@ -198,42 +196,162 @@ module Submit64
     private
 
     def submit64_get_resource_data(form_metadata, request_params, context)
-      relations_to_include = []
       columns_to_select = [self.primary_key.to_sym]
+      relations_data = {}
       form_metadata[:sections].each do |section|
         section[:fields].each do |field|
-          if field[:field_association_name] != nil
-            relations_to_include << field[:field_association_name]
+          field.delete(:default_value)
+          if field[:field_association_name] == nil
+            columns_to_select << field[:field_name]
+          else
+            relation_data = self.reflect_on_association(field[:field_association_name])
+            columns_to_select << relation_data.association_foreign_key
+            relations_data[field[:field_name]] = relation_data
           end
-          columns_to_select << field[:field_name]
         end
       end
       resource_data = self.all
                           .select(columns_to_select)
-                          .includes(relations_to_include)
                           .where({ self.primary_key.to_sym => request_params[:resourceId] })
                           .first
 
       form_metadata[:sections].each do |section|
         section[:fields].each do |field|
-          relation = relations_to_include.find do |relation_name_find|
-            relation_name_find == field[:field_association_name]
-          end
-          if relation.nil?
+          if (field[:field_association_name] == nil)
             next
           end
-          row = resource_data.method(relation).call
-          default_display_value = ""
-          custom_display_value = submit64_try_row_method_with_context(row, :submit64_association_label, context)
-          if custom_display_value != nil
-            default_display_value = custom_display_value
+          association_class = field[:field_association_class]
+          custom_select_column = submit64_try_model_method_with_context(association_class, :submit64_association_select_columns, context)
+          if custom_select_column != nil
+            builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym]).all
           else
-            default_display_value = submit64_association_default_label(row)
+            builder_rows = association_class.all
           end
-          field[:default_display_value] = default_display_value
+          custom_builder_row_filter = submit64_try_model_method_with_context(association_class, :submit64_association_filter_rows, context)
+          if custom_builder_row_filter != nil
+            builder_rows = builder_rows.and(custom_builder_row_filter)
+          end
+          relation_data =  relations_data[field[:field_name]]
+          builder_rows = builder_rows.and(association_class.where({ relation_data.association_primary_key => resource_data[relation_data.association_foreign_key] }))
+
+          rows = builder_rows
+          if field[:field_type] == "selectBelongsTo"
+            default_display_value = ""
+            row = rows.first
+            if row.nil?
+              next
+            end
+            custom_display_value = submit64_try_row_method_with_context(row, :submit64_association_label, context)
+            if custom_display_value != nil
+              default_display_value = custom_display_value
+            else
+              default_display_value = submit64_association_default_label(row)
+            end
+            field[:default_display_value] = default_display_value
+            resource_data[field[:field_name]] = row[association_class.primary_key]
+          elsif field[:field_type] == "selectHasMany"
+            default_display_value = []
+            resource_data[:field_name] = []
+            rows.each do |row|
+              custom_display_value = submit64_try_row_method_with_context(row, :submit64_association_label, context)
+              if custom_display_value != nil
+                default_display_value << custom_display_value
+              else
+                default_display_value << submit64_association_default_label(row)
+              end
+              resource_data[field[:field_name]] << row.call(association_class.primary_key.to_sym)
+            end
+            field[:default_display_value] = default_display_value
+          end
         end
       end
       resource_data_final = resource_data.as_json
+      [resource_data_final, form_metadata]
+    end
+
+    def submit64_get_default_value_data(form_metadata, context)
+      resource_data_final = {}
+      form_metadata[:sections].each do |section|
+        section[:fields].each do |field|
+          if field[:default_value] == nil
+            next
+          end
+          default_value = nil
+          case field[:field_type]
+          when 'string'
+            default_value = field[:default_value].to_s
+          when 'text'
+            default_value = field[:default_value].to_s
+          when 'date'
+            default_value = field[:default_value].to_s
+          when 'datetime'
+            default_value = field[:default_value].to_s            
+          when 'selectString'
+            default_value = field[:default_value].to_a
+          when 'selectBelongsTo'
+            association_class = field[:field_association_class]
+            custom_select_column = submit64_try_model_method_with_context(association_class, :submit64_association_select_columns, context)
+            if custom_select_column != nil
+              builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym]).all
+            else
+              builder_rows = association_class.all
+            end
+            custom_builder_row_filter = submit64_try_model_method_with_context(association_class, :submit64_association_filter_rows, context)
+            if custom_builder_row_filter != nil
+              builder_rows = builder_rows.and(custom_builder_row_filter)
+            end
+            builder_rows = builder_rows.and(association_class.where({ association_class.primary_key.to_sym => field[:default_value] }))
+            row = builder_rows.first
+            if row.nil?
+              next
+            end
+            default_display_value = ""
+            custom_display_value = submit64_try_row_method_with_context(row, :submit64_association_label, context)
+            if custom_display_value != nil
+              default_display_value = custom_display_value
+            else
+              default_display_value = submit64_association_default_label(row)
+            end
+            default_value = row[association_class.primary_key]
+            field[:default_display_value] = default_display_value
+          when 'selectHasMany'
+            association_class = field[:field_association_class]
+            custom_select_column = submit64_try_model_method_with_context(association_class, :submit64_association_select_columns, context)
+            if custom_select_column != nil
+              builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym]).all
+            else
+              builder_rows = association_class.all
+            end
+            custom_builder_row_filter = submit64_try_model_method_with_context(association_class, :submit64_association_filter_rows, context)
+            if custom_builder_row_filter != nil
+              builder_rows = builder_rows.and(custom_builder_row_filter)
+            end
+            builder_rows.and(association_class.where({ association_class.primary_key.to_sym => field[:default_value] }))
+            rows = builder_rows
+            default_display_value = []
+            default_value = []
+            rows.each do |row|
+              custom_display_value = submit64_try_row_method_with_context(row, :submit64_association_label, context)
+              if custom_display_value != nil
+                default_display_value << custom_display_value
+              else
+                default_display_value << submit64_association_default_label(row)
+              end
+              default_value << row[association_class.primary_key]
+            end
+            field[:default_display_value] = default_display_value
+          when 'checkbox'
+            default_value = field[:default_value].to_s == "true"
+          when 'number'
+            field_default_value = field[:default_value]
+            default_value = field_default_value.float? ? field_default_value.to_f : field_default_value;to_i
+          when 'object'
+            default_value = field[:default_value]
+          end
+          resource_data_final[field[:field_name]] = default_value
+          field.delete(:default_value)
+        end
+      end
       [resource_data_final, form_metadata]
     end
 
@@ -284,8 +402,8 @@ module Submit64
       case association.class.to_s.demodulize
       when "BelongsToReflection"
         return "selectBelongsTo"
-        # when "HasManyReflection"
-        #   return "selectHasMany"
+      when "HasManyReflection"
+        return "selectHasMany"
       else
         return "???"
       end
@@ -564,26 +682,10 @@ module Submit64
       nil
     end
 
-    def submit64_get_shallow_form_config(context)
-      default_form = self.submit64_get_default_form
-      form = submit64_try_model_method_with_context(self, :submit64_form_builder, context)
-      if form.nil?
-        form = default_form
-      else
-        form = default_form.merge(form)
-      end
-      {
-        backend_date_format: form[:backend_date_format],
-        backend_datetime_format: form[:backend_datetime_format],
-        use_model_validations: form[:use_model_validations],
-      }
-    end
-
     def submit64_get_default_form
       {
         sections: [],
         use_model_validations: true,
-        has_global_custom_validation: false,
         backend_date_format: 'YYYY-MM-DD',
         backend_datetime_format: 'YYYY-MM-DDTHH:mm:ss.SSSZ',
         resource_name: self.to_s,
@@ -594,7 +696,7 @@ module Submit64
     end
 
     def submit64_get_form(context)
-      # First sructuration
+      # First structuration
       default_form_metadata = self.submit64_get_default_form
       form_metadata = submit64_try_model_method_with_context(self, :submit64_form_builder, context)
       if form_metadata.nil?
@@ -670,7 +772,7 @@ module Submit64
             form_rules = self.submit64_get_column_rules(field_map, field_type, form_metadata, context[:name])
             form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
             field_association_name = association.name
-            field_association_class = association.klass.to_s
+            field_association_class = association.klass
           end
           {
             field_name: field_name,
@@ -682,6 +784,7 @@ module Submit64
             rules: form_rules,
             select_options: form_select_options,
             css_class: field_map[:css_class],
+            default_value: field_map[:default_value]
           }
         end
         {
@@ -691,7 +794,16 @@ module Submit64
           css_class: section_map[:css_class]
         }
       end
-      form_metadata
+      {
+        sections: form_metadata[:sections],
+        resource_name: form_metadata[:resource_name],
+        use_model_validations: form_metadata[:use_model_validations],
+        backend_date_format: form_metadata[:backend_date_format],
+        backend_datetime_format: form_metadata[:backend_datetime_format],
+        css_class: form_metadata[:css_class],
+        resetable: form_metadata[:resetable],
+        clearable: form_metadata[:clearable]
+      }
     end
 
     def submit64_valid_attribute?(resource_instance, attr)

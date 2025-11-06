@@ -6,7 +6,6 @@ module Submit64
         backend_date_format: String,
         backend_datetime_format: String,
         use_model_validations?: bool,
-        has_global_custom_validation?: bool,
         resetable?: bool,
         clearable?: bool,
         css_class?: String,
@@ -33,6 +32,7 @@ module Submit64
         readonly?: bool,
         default_display_value?: String,
         statement?: Proc,
+        default_value?: untyped
       }
     type rule = {
         type: String,
@@ -110,6 +110,8 @@ module Submit64
     private
 
     def submit64_get_resource_data: (hashForm, get_metadata_params, context) -> [hashForm, resourceData]
+                                  
+    def submit64_get_default_value_data: (hashForm, context) -> [hashForm, resourceData]
 
     def submit64_get_column_type_by_sgbd_type: (Symbol) -> Symbol
 

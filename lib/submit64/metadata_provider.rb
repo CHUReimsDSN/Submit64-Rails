@@ -200,6 +200,7 @@ module Submit64
       relations_data = {}
       form_metadata[:sections].each do |section|
         section[:fields].each do |field|
+          field.delete(:default_value)
           if field[:field_association_name] == nil
             columns_to_select << field[:field_name]
           else
@@ -792,6 +793,7 @@ module Submit64
       end
       {
         sections: form_metadata[:sections],
+        resource_name: form_metadata[:resource_name],
         use_model_validations: form_metadata[:use_model_validations],
         backend_date_format: form_metadata[:backend_date_format],
         backend_datetime_format: form_metadata[:backend_datetime_format],

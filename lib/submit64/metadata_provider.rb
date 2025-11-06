@@ -759,7 +759,7 @@ module Submit64
             form_rules = self.submit64_get_column_rules(field_map, field_type, form_metadata, context[:name])
             form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
             field_association_name = association.name
-            field_association_class = association.klass.to_s
+            field_association_class = association.klass
           end
           {
             field_name: field_name,

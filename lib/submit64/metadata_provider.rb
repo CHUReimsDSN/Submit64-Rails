@@ -399,8 +399,8 @@ module Submit64
       case association.class.to_s.demodulize
       when "BelongsToReflection"
         return "selectBelongsTo"
-        # when "HasManyReflection"
-        #   return "selectHasMany"
+      when "HasManyReflection"
+        return "selectHasMany"
       else
         return "???"
       end

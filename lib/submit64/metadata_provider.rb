@@ -81,7 +81,7 @@ module Submit64
         end
         builder_rows = builder_rows.and(label_filter_builder)
       end
-      builder_row_count = builder_rows.count
+      builder_row_count = builder_rows.select('*').count
       builder_rows = builder_rows.limit(limit).offset(offset).map do |row|
         label = ""
         custom_label = submit64_try_row_method_with_context(row, :submit64_association_label, context)

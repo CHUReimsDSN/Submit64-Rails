@@ -197,10 +197,15 @@ module Submit64
 
     def submit64_get_resource_data(form_metadata, request_params, context)
       columns_to_select = [self.primary_key.to_sym]
+      relations_data = {}
       form_metadata[:sections].each do |section|
         section[:fields].each do |field|
           if field[:field_association_name] == nil
             columns_to_select << field[:field_name]
+          else
+            relation_data = self.reflect_on_association(field[:field_association_name])
+            columns_to_select << relation_data.association_foreign_key
+            relations_data[field[:field_name]] = relation_data
           end
         end
       end
@@ -214,7 +219,6 @@ module Submit64
           if (field[:field_association_name] == nil)
             next
           end
-          relation = field[:field_association_name]
           association_class = field[:field_association_class]
           custom_select_column = submit64_try_model_method_with_context(association_class, :submit64_association_select_columns, context)
           if custom_select_column != nil
@@ -226,8 +230,8 @@ module Submit64
           if custom_builder_row_filter != nil
             builder_rows = builder_rows.and(custom_builder_row_filter)
           end
-          relation_data = self.reflect_on_association(relation)
-          builder_rows = builder_rows.and(association_class.where({ relation_data.association_primary_key => self.method(relation_data.association_foreign_key.to_sym).call }))
+          relation_data =  relations_data[field[:field_name]]
+          builder_rows = builder_rows.and(association_class.where({ relation_data.association_primary_key => resource_data.method(relation_data.association_foreign_key.to_sym).call }))
 
           rows = builder_rows
           if field[:field_type] == "selectBelongsTo"

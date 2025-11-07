@@ -190,7 +190,7 @@ module Submit64
           else
             relation_data = self.reflect_on_association(field[:field_association_name])
             if relation_data.class.to_s.demodulize == "BelongsToReflection"
-              columns_to_select << relation_data.association_foreign_key
+              columns_to_select << relation_data.foreign_key
             end
             relations_data[field[:field_name]] = relation_data
           end
@@ -222,7 +222,7 @@ module Submit64
 
           if field[:field_type] == "selectBelongsTo"
             default_display_value = ""
-            row = builder_rows.and(association_class.where({ relation_data.association_primary_key => resource_data[relation_data.association_foreign_key] })).first
+            row = builder_rows.and(association_class.where({ relation_data.association_primary_key => resource_data[relation_data.foreign_key] })).first
             if row.nil?
               next
             end

@@ -15,19 +15,23 @@ Dir.glob("#{folder_path}*.md").sort.each_with_index do |file, index|
 
   toc_entries = content.scan(/^## (.+)/)
   if toc_entries.size >= 2
-    toc = ["\n## Table des matières", ""]
-    toc_entries.each do |entry|
-      title = entry.first.strip
-      anchor = title.downcase.gsub(/[^a-z0-9\s-]/, '').gsub(/\s+/, '-')
-      toc << "- [#{title}](##{anchor})"
+    toc = ["\n## Table des matières", "{: .no_toc .text-delta }", ""]
+    toc_entries.each_with_index do |entry, index_entry|
+      toc << "#{index_entry}. #{entry.first}"
     end
+    toc << "{:toc}"
     toc << ""
 
-    parts = content.split(/^---\s*$/, 3)
-    if parts.length >= 3
-      content = "#{parts[0]}---#{parts[1]}---\n#{toc.join("\n")}\n#{parts[2]}"
+    if content =~ /^# .+/
+      content.sub!(/(^# .+\n)/, "\\1#{toc.join("\n")}\n")
     else
-      content = "#{content}\n#{toc.join("\n")}"
+      # Si pas de titre principal, ajouter le TOC après le front matter
+      parts = content.split(/^---\s*$/, 3)
+      if parts.length >= 3
+        content = "#{parts[0]}---#{parts[1]}---\n#{toc.join("\n")}\n#{parts[2]}"
+      else
+        content = "#{content}\n#{toc.join("\n")}"
+      end
     end
   end
 

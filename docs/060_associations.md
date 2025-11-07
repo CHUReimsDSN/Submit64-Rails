@@ -82,7 +82,7 @@ Ces filtres s'appliquent **après** ceux définis par `submit64_association_filt
 
 <br /><br /> 
 
-## Définir les colonnes à séléctionnées
+## Définir les colonnes à séléctionnées (pour la recherche)
 
 La méthode `submit64_association_select_columns` permet d'éviter de sélectionner l'entièreté de
 la ligne en base et de définir une liste arbitraire de colonnes.

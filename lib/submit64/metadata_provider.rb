@@ -638,8 +638,8 @@ module Submit64
       if row.respond_to?(:label, true)
         return row.method(:label).call.to_s
       end
-      if row.respond_to?(:to_s, true)
-        return row.method(:to_s).call.to_s
+      if row.respond_to?(:id, true)
+        return row.method(:id).call.to_s
       end
       row.method(self.primary_key.to_sym).call.to_s
     end

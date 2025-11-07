@@ -127,9 +127,9 @@ module Submit64
 
     def submit64_association_default_label: (Class) -> String
 
-    def submit64_try_model_method_with_context: (untyped, Symbol, context) -> untyped
+    def submit64_try_model_method_with_args: (untyped, Symbol, *untyped) -> untyped
 
-    def submit64_try_row_method_with_context: (untyped, Symbol, context) -> untyped
+    def submit64_try_row_method_with_args: (untyped, Symbol, *untyped) -> untyped
 
     def submit64_get_shallow_form_config: (context) -> shallowForm
 

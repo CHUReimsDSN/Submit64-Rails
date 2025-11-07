@@ -46,7 +46,7 @@ module Submit64
       if association.nil?
         raise Submit64Exception.new("Association not found : #{request_params[:associationName]}", 400)
       end
-
+      from_class = self.to_s
       association_class = association.klass
       default_limit = Submit64.get_association_data_pagination_limit
       limit = request_params[:limit] || default_limit
@@ -54,20 +54,20 @@ module Submit64
         limit = default_limit
       end
       offset = request_params[:offset] || 0
-      custom_select_column = submit64_try_model_method_with_context(association_class, :submit64_association_select_columns, context)
+      custom_select_column = submit64_try_model_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
       if custom_select_column != nil
         builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym]).all
       else
         builder_rows = association_class.all
       end
-      custom_builder_row_filter = submit64_try_model_method_with_context(association_class, :submit64_association_filter_rows, context)
+      custom_builder_row_filter = submit64_try_model_method_with_args(association_class, :submit64_association_filter_rows, from_class, context)
       if custom_builder_row_filter != nil
         builder_rows = builder_rows.and(custom_builder_row_filter)
       end
       label_filter = request_params[:labelFilter]
       if !label_filter.empty?
         columns_filter = [:label, :id]
-        custom_columns_filter = submit64_try_model_method_with_context(association_class, :submit64_association_filter_columns, context)
+        custom_columns_filter = submit64_try_model_method_with_args(association_class, :submit64_association_filter_columns, from_class, context)
         if custom_columns_filter != nil
           columns_filter = custom_columns_filter
         end
@@ -84,7 +84,7 @@ module Submit64
       builder_row_count = builder_rows.reselect(association_class.primary_key.to_sym).count
       builder_rows = builder_rows.limit(limit).offset(offset).map do |row|
         label = ""
-        custom_label = submit64_try_row_method_with_context(row, :submit64_association_label, context)
+        custom_label = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)
         if custom_label != nil
           label = custom_label
         else
@@ -196,6 +196,7 @@ module Submit64
     private
 
     def submit64_get_resource_data(form_metadata, request_params, context)
+      from_class = self.to_s
       columns_to_select = [self.primary_key.to_sym]
       relations_data = {}
       form_metadata[:sections].each do |section|
@@ -221,13 +222,13 @@ module Submit64
             next
           end
           association_class = field[:field_association_class]
-          custom_select_column = submit64_try_model_method_with_context(association_class, :submit64_association_select_columns, context)
+          custom_select_column = submit64_try_model_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
           if custom_select_column != nil
             builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym]).all
           else
             builder_rows = association_class.all
           end
-          custom_builder_row_filter = submit64_try_model_method_with_context(association_class, :submit64_association_filter_rows, context)
+          custom_builder_row_filter = submit64_try_model_method_with_args(association_class, :submit64_association_filter_rows, from_class, context)
           if custom_builder_row_filter != nil
             builder_rows = builder_rows.and(custom_builder_row_filter)
           end
@@ -241,7 +242,7 @@ module Submit64
             if row.nil?
               next
             end
-            custom_display_value = submit64_try_row_method_with_context(row, :submit64_association_label, context)
+            custom_display_value = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)
             if custom_display_value != nil
               default_display_value = custom_display_value
             else
@@ -253,7 +254,7 @@ module Submit64
             default_display_value = []
             resource_data[:field_name] = []
             rows.each do |row|
-              custom_display_value = submit64_try_row_method_with_context(row, :submit64_association_label, context)
+              custom_display_value = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)
               if custom_display_value != nil
                 default_display_value << custom_display_value
               else
@@ -271,6 +272,7 @@ module Submit64
 
     def submit64_get_default_value_data(form_metadata, context)
       resource_data_final = {}
+      from_class = self.to_s
       form_metadata[:sections].each do |section|
         section[:fields].each do |field|
           if field[:default_value] == nil
@@ -290,13 +292,13 @@ module Submit64
             default_value = field[:default_value].to_a
           when 'selectBelongsTo'
             association_class = field[:field_association_class]
-            custom_select_column = submit64_try_model_method_with_context(association_class, :submit64_association_select_columns, context)
+            custom_select_column = submit64_try_model_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
             if custom_select_column != nil
               builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym]).all
             else
               builder_rows = association_class.all
             end
-            custom_builder_row_filter = submit64_try_model_method_with_context(association_class, :submit64_association_filter_rows, context)
+            custom_builder_row_filter = submit64_try_model_method_with_args(association_class, :submit64_association_filter_rows, from_class, context)
             if custom_builder_row_filter != nil
               builder_rows = builder_rows.and(custom_builder_row_filter)
             end
@@ -306,7 +308,7 @@ module Submit64
               next
             end
             default_display_value = ""
-            custom_display_value = submit64_try_row_method_with_context(row, :submit64_association_label, context)
+            custom_display_value = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)
             if custom_display_value != nil
               default_display_value = custom_display_value
             else
@@ -316,13 +318,13 @@ module Submit64
             field[:default_display_value] = default_display_value
           when 'selectHasMany'
             association_class = field[:field_association_class]
-            custom_select_column = submit64_try_model_method_with_context(association_class, :submit64_association_select_columns, context)
+            custom_select_column = submit64_try_model_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
             if custom_select_column != nil
               builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym]).all
             else
               builder_rows = association_class.all
             end
-            custom_builder_row_filter = submit64_try_model_method_with_context(association_class, :submit64_association_filter_rows, context)
+            custom_builder_row_filter = submit64_try_model_method_with_args(association_class, :submit64_association_filter_rows, from_class, context)
             if custom_builder_row_filter != nil
               builder_rows = builder_rows.and(custom_builder_row_filter)
             end
@@ -331,7 +333,7 @@ module Submit64
             default_display_value = []
             default_value = []
             rows.each do |row|
-              custom_display_value = submit64_try_row_method_with_context(row, :submit64_association_label, context)
+              custom_display_value = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)
               if custom_display_value != nil
                 default_display_value << custom_display_value
               else
@@ -658,11 +660,11 @@ module Submit64
       row.method(self.primary_key.to_sym).call.to_s
     end
 
-    def submit64_try_model_method_with_context(class_model, method_name, context)
+    def submit64_try_model_method_with_args(class_model, method_name, *args)
       if class_model.respond_to?(method_name, true)
         method_found = class_model.method(method_name)
         if method_found.parameters.any?
-          return method_found.call(context)
+          return method_found.call(*args)
         else
           return method_found.call
         end
@@ -670,11 +672,11 @@ module Submit64
       nil
     end
 
-    def submit64_try_row_method_with_context(row, method_name, context)
+    def submit64_try_row_method_with_args(row, method_name, *args)
       if row.respond_to?(method_name, true)
         method_found = row.method(method_name)
         if method_found.parameters.any?
-          return method_found.call(context)
+          return method_found.call(*args)
         else
           return method_found.call
         end
@@ -698,7 +700,7 @@ module Submit64
     def submit64_get_form(context)
       # First structuration
       default_form_metadata = self.submit64_get_default_form
-      form_metadata = submit64_try_model_method_with_context(self, :submit64_form_builder, context)
+      form_metadata = submit64_try_model_method_with_args(self, :submit64_form_builder, context)
       if form_metadata.nil?
         form_metadata = default_form_metadata
       else

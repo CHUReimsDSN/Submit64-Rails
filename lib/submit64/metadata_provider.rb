@@ -237,8 +237,8 @@ module Submit64
           elsif field[:field_type] == "selectHasMany"
             default_display_value = []
             resource_data_json[field[:field_name]] = []
-            builder_rows = builder_rows.and(association_class.where({ relation_data.association_foreign_key => resource_data[relation_data.association_primary_key] })).first
-            builder_rows.each do |row|
+            builder_rows = builder_rows.and(association_class.where({ relation_data.association_primary_key => resource_data[relation_data.association_foreign_key] })).first
+            builder_rows.each do |row|association_primary_key
               custom_display_value = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)
               if custom_display_value != nil
                 default_display_value << custom_display_value

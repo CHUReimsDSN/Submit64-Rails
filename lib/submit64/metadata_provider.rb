@@ -785,7 +785,7 @@ module Submit64
             field_association_class: field_association_class,
             hint: field_map[:hint],
             prefix: field_map[:prefix],
-            suffix: field_map[:prefix],
+            suffix: field_map[:suffix],
             readonly: field_map[:readonly],
             rules: form_rules,
             select_options: form_select_options,

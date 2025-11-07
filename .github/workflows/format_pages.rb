@@ -15,15 +15,7 @@ Dir.glob("#{folder_path}*.md").sort.each_with_index do |file, index|
 
   toc_entries = content.scan(/^## (.+)/)
   if toc_entries.size >= 2
-    toc = ["\n## Table des matières", "{: .no_toc }", ""]
-    toc_entries.each_with_index do |entry, index_entry|
-      if index_entry == 0
-        next
-      end
-      toc << "#{index_entry}. #{entry.first}"
-    end
-    toc << "{:toc}"
-    toc << ""
+    toc = ["{: .no_toc }", "", "\n## Table des matières", "{: .no_toc .text-delta }", "", "1. TOC", "{:toc}", ""]
 
     if content =~ /^# .+/
       content.sub!(/(^# .+\n)/, "\\1#{toc.join("\n")}\n")

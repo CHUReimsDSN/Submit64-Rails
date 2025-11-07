@@ -692,6 +692,7 @@ module Submit64
         backend_datetime_format: 'YYYY-MM-DDTHH:mm:ss.SSSZ',
         resource_name: self.to_s,
         css_class: '',
+        css_class_readonly: '',
         resetable: false,
         clearable: false
       }
@@ -783,9 +784,13 @@ module Submit64
             field_association_name: field_association_name,
             field_association_class: field_association_class,
             hint: field_map[:hint],
+            prefix: field_map[:prefix],
+            suffix: field_map[:prefix],
+            readonly: field_map[:readonly],
             rules: form_rules,
             select_options: form_select_options,
             css_class: field_map[:css_class],
+            css_class_readonly: field_map[:css_class_readonly],
             default_value: field_map[:default_value]
           }
         end
@@ -793,7 +798,9 @@ module Submit64
           fields: fields,
           label: section_map[:label],
           icon: section_map[:icon],
-          css_class: section_map[:css_class]
+          readonly: section_map[:readonly],
+          css_class: section_map[:css_class],
+          css_class_readonly: section_map[:css_class_readonly],
         }
       end
       {
@@ -803,8 +810,10 @@ module Submit64
         backend_date_format: form_metadata[:backend_date_format],
         backend_datetime_format: form_metadata[:backend_datetime_format],
         css_class: form_metadata[:css_class],
+        css_class_readonly: form_metadata[:css_class_readonly],
         resetable: form_metadata[:resetable],
-        clearable: form_metadata[:clearable]
+        clearable: form_metadata[:clearable],
+        readonly: form_metadata[:readonly],
       }
     end
 

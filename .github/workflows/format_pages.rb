@@ -13,7 +13,7 @@ Dir.glob("#{folder_path}*.md").sort.each_with_index do |file, index|
     content = "---\nnav_order: #{nav_order}\nlayout: default\n---\n\n" + content
   end
 
-  toc_entries = content.scan(/^## (.+)/)
+  toc_entries = content.scan(/^(?<!#)## (.+)$/)
   if toc_entries.size >= 2
     toc = ["\n## Table des matières", "{: .no_toc .text-delta }", ""]
     toc_entries.each_with_index do |entry, index_entry|

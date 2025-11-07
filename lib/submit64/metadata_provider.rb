@@ -167,23 +167,6 @@ module Submit64
         resource_data_renew = submit64_get_form_metadata_and_data(params_for_form)[:resource_data]
       else
         error_messages = resource_instance.errors.messages.deep_dup
-
-        # Replace key for belongs_to
-        keys_to_rename = {}
-        columns = self.column_names
-        error_messages.keys.each do |key|
-          if columns.exclude?(key.to_s)
-            association = self.reflect_on_association(key)
-            if association != nil && association.class.to_s.demodulize == "BelongsToReflection"
-              keys_to_rename[key] = association.foreign_key.to_sym
-            end
-          end
-        end
-        keys_to_rename.each do |key_to_rename, renamed_key|
-          error_messages[renamed_key] = error_messages[key_to_rename]
-          error_messages.delete(key_to_rename)
-        end
-
       end
       {
         success: success,
@@ -206,7 +189,9 @@ module Submit64
             columns_to_select << field[:field_name]
           else
             relation_data = self.reflect_on_association(field[:field_association_name])
-            columns_to_select << relation_data.association_foreign_key
+            if relation_data.class.to_s.demodulize == "BelongsToReflection"
+              columns_to_select << relation_data.association_foreign_key
+            end
             relations_data[field[:field_name]] = relation_data
           end
         end
@@ -233,12 +218,10 @@ module Submit64
             builder_rows = builder_rows.and(custom_builder_row_filter)
           end
           relation_data =  relations_data[field[:field_name]]
-          builder_rows = builder_rows.and(association_class.where({ relation_data.association_primary_key => resource_data[relation_data.association_foreign_key] }))
 
-          rows = builder_rows
           if field[:field_type] == "selectBelongsTo"
             default_display_value = ""
-            row = rows.first
+            row = builder_rows.and(association_class.where({ relation_data.association_primary_key => resource_data[relation_data.association_foreign_key] })).first
             if row.nil?
               next
             end
@@ -249,18 +232,19 @@ module Submit64
               default_display_value = submit64_association_default_label(row)
             end
             field[:default_display_value] = default_display_value
-            resource_data[field[:field_name]] = row[association_class.primary_key]
+            resource_data[field[:field_name]] = row[association_class.primary_key.to_sym]
           elsif field[:field_type] == "selectHasMany"
             default_display_value = []
             resource_data[:field_name] = []
-            rows.each do |row|
+            builder_rows = builder_rows.and(association_class.where({ relation_data.association_foreign_key => resource_data[relation_data.association_primary_key] })).first
+            builder_rows.each do |row|
               custom_display_value = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)
               if custom_display_value != nil
                 default_display_value << custom_display_value
               else
                 default_display_value << submit64_association_default_label(row)
               end
-              resource_data[field[:field_name]] << row.call(association_class.primary_key.to_sym)
+              resource_data[field[:field_name]] << row[association_class.primary_key.to_sym]
             end
             field[:default_display_value] = default_display_value
           end
@@ -769,10 +753,9 @@ module Submit64
             field_association_name = nil
             field_association_class = nil
           else
-            field_name = association.foreign_key
+            field_name = field_map[:target]
             form_field_type = self.submit64_get_form_field_type_by_association(association)
-            field_type = self.submit64_get_column_type_by_sgbd_type(columns_hash[field_name.to_s].type)
-            form_rules = self.submit64_get_column_rules(field_map, field_type, form_metadata, context[:name])
+            form_rules = self.submit64_get_column_rules(field_map, nil, form_metadata, context[:name])
             form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
             field_association_name = association.name
             field_association_class = association.klass

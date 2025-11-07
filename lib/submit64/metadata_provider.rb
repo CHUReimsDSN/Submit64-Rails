@@ -200,6 +200,7 @@ module Submit64
                           .select(columns_to_select)
                           .where({ self.primary_key.to_sym => request_params[:resourceId] })
                           .first
+      resource_data_json = resource_data.as_json
 
       form_metadata[:sections].each do |section|
         section[:fields].each do |field|
@@ -232,10 +233,10 @@ module Submit64
               default_display_value = submit64_association_default_label(row)
             end
             field[:default_display_value] = default_display_value
-            resource_data[field[:field_name]] = row[association_class.primary_key.to_sym]
+            resource_data_json[field[:field_name]] = row[association_class.primary_key.to_sym]
           elsif field[:field_type] == "selectHasMany"
             default_display_value = []
-            resource_data[field[:field_name]] = []
+            resource_data_json[field[:field_name]] = []
             builder_rows = builder_rows.and(association_class.where({ relation_data.association_foreign_key => resource_data[relation_data.association_primary_key] })).first
             builder_rows.each do |row|
               custom_display_value = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)
@@ -244,14 +245,13 @@ module Submit64
               else
                 default_display_value << submit64_association_default_label(row)
               end
-              resource_data[field[:field_name]] << row[association_class.primary_key.to_sym]
+              resource_data_json[field[:field_name]] << row[association_class.primary_key.to_sym]
             end
             field[:default_display_value] = default_display_value
           end
         end
       end
-      resource_data_final = resource_data.as_json
-      [resource_data_final, form_metadata]
+      [resource_data_json, form_metadata]
     end
 
     def submit64_get_default_value_data(form_metadata, context)

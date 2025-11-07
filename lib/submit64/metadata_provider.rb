@@ -235,7 +235,7 @@ module Submit64
             resource_data[field[:field_name]] = row[association_class.primary_key.to_sym]
           elsif field[:field_type] == "selectHasMany"
             default_display_value = []
-            resource_data[:field_name] = []
+            resource_data[field[:field_name]] = []
             builder_rows = builder_rows.and(association_class.where({ relation_data.association_foreign_key => resource_data[relation_data.association_primary_key] })).first
             builder_rows.each do |row|
               custom_display_value = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)

@@ -33,4 +33,4 @@ Ne pas se baser sur le contexte pour définir des politiques de sécurité,
 car celui-ci provient entièrement du client.
 
 {: .important }
-Consulter les [Définitions]({% link 090_definitions.md %}) pour savoir quelles méthode reçoivent le contexte
+Consulter les [Définitions]({% link 090_definitions.md %}) pour savoir quelles méthodes reçoivent le contexte

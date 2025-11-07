@@ -13,10 +13,13 @@ Dir.glob("#{folder_path}*.md").sort.each_with_index do |file, index|
     content = "---\nnav_order: #{nav_order}\nlayout: default\n---\n\n" + content
   end
 
-  toc_entries = content.scan(/^(?<!#)## (.+)$/)
+  toc_entries = content.scan(/^## (.+)/)
   if toc_entries.size >= 2
-    toc = ["\n## Table des matières", "{: .no_toc .text-delta }", ""]
+    toc = ["\n## Table des matières", "{: .no_toc }", ""]
     toc_entries.each_with_index do |entry, index_entry|
+      if index_entry == 0
+        next
+      end
       toc << "#{index_entry}. #{entry.first}"
     end
     toc << "{:toc}"
@@ -25,7 +28,6 @@ Dir.glob("#{folder_path}*.md").sort.each_with_index do |file, index|
     if content =~ /^# .+/
       content.sub!(/(^# .+\n)/, "\\1#{toc.join("\n")}\n")
     else
-      # Si pas de titre principal, ajouter le TOC après le front matter
       parts = content.split(/^---\s*$/, 3)
       if parts.length >= 3
         content = "#{parts[0]}---#{parts[1]}---\n#{toc.join("\n")}\n#{parts[2]}"

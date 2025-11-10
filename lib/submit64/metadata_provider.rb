@@ -785,7 +785,7 @@ module Submit64
             suffix: field_map[:suffix],
             readonly: field_map[:readonly],
             rules: form_rules,
-            select_options: form_select_options,
+            static_select_options: form_select_options,
             css_class: field_map[:css_class],
             css_class_readonly: field_map[:css_class_readonly],
             default_value: field_map[:default_value]

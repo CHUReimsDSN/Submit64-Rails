@@ -157,7 +157,7 @@ module Submit64
           if value.class != Array
             next
           end
-          request_params[:resourceData][key] = association_find[:class].where({ association_find.primary_key => value })
+          request_params[:resourceData][key] = association_find[:class].where({ association_find[:class].primary_key => value })
         end
       end
 

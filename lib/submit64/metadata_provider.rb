@@ -153,11 +153,11 @@ module Submit64
         association_find = all_has_many_association.find do |asso_find|
           asso_find[:name] == key
         end
-        if value.class != Array
-          next
-        end
         if association_find
-          value = association_find[:class].where({association_find.primary_key => value })
+          if value.class != Array
+            next
+          end
+          request_params[:resourceData][key] = association_find[:class].where({ association_find.primary_key => value })
         end
       end
 

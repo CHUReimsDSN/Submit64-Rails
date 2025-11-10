@@ -143,7 +143,7 @@ module Submit64
       resource_id = resource_instance.id || nil     
 
       # Compute row ids from has_many to instance
-      all_has_many_association = resource_instance.reflect_on_all_associations(:has_many).map do |association|
+      all_has_many_association = self.reflect_on_all_associations(:has_many).map do |association|
         {
           name: association.name,
           class: association.class

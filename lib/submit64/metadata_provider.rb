@@ -146,7 +146,7 @@ module Submit64
       all_has_many_association = self.reflect_on_all_associations(:has_many).map do |association|
         {
           name: association.name,
-          class: association.class
+          klass: association.klass
         }
       end
       request_params[:resourceData].each do |key, value|
@@ -157,7 +157,7 @@ module Submit64
           if value.class != Array
             next
           end
-          request_params[:resourceData][key] = association_find[:class].where({ association_find[:class].primary_key => value })
+          request_params[:resourceData][key] = association_find[:klass].where({ association_find[:klass].primary_key => value })
         end
       end
 

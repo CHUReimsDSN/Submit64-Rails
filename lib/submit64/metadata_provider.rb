@@ -143,22 +143,21 @@ module Submit64
       resource_id = resource_instance.id || nil     
 
       # Compute row ids from has_many to instance
-      associations_data = {}
       all_has_many_association = self.reflect_on_all_associations(:has_many).map do |association|
         {
           name: association.name,
-          klass: association.klass
+          class: association.class
         }
       end
       request_params[:resourceData].each do |key, value|
         association_find = all_has_many_association.find do |asso_find|
-          asso_find[:name] == key.to_sym
+          asso_find[:name] == key
         end
         if association_find
           if value.class != Array
             next
           end
-          associations_data[key.to_sym] = association_find[:klass].where({ association_find[:klass].primary_key => value })
+          request_params[:resourceData][key] = association_find[:class].where({ association_find[:class].primary_key => value })
         end
       end
 

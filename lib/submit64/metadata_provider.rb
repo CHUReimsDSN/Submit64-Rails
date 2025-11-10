@@ -139,7 +139,7 @@ module Submit64
 
       skip_validation = form[:use_model_validations] == false
       success = false
-      error_messages = []
+      error_messages = {}
       resource_id = resource_instance.id || nil     
 
       # Compute row ids from has_many to instance
@@ -165,7 +165,20 @@ module Submit64
       # Valid each attributs
       is_valid = true
       if !skip_validation
-        resource_instance.assign_attributes(request_params[:resourceData])
+        begin
+          resource_instance.assign_attributes(request_params[:resourceData])
+        rescue => exception
+          if exception.class == ActiveRecord::RecordNotSaved
+            if exception.message.include? "because one or more of the new records could not be saved"
+              error_messages["backend"] = ["Association impossible car un des '#{exception.message.split("replace").second.split(" ").first} n'est pas valide'"]
+              return {
+                success: false,
+                resource_id: resource_id,
+                errors: error_messages
+              }
+            end
+          end
+        end
         request_params[:resourceData].keys.each do |resource_key|
           if !submit64_valid_attribute?(resource_instance, resource_key)
             is_valid = false

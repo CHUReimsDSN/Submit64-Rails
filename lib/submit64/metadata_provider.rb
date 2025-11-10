@@ -221,33 +221,40 @@ module Submit64
           relation_data =  relations_data[field[:field_name]]
 
           if field[:field_type] == "selectBelongsTo"
-            default_display_value = ""
             row = builder_rows.and(association_class.where({ relation_data.association_primary_key => resource_data[relation_data.foreign_key] })).first
             if row.nil?
               next
             end
+            association_data = {
+              label: "",
+              data: row
+            }
             custom_display_value = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)
             if custom_display_value != nil
-              default_display_value = custom_display_value
+              association_data[:label] = custom_display_value
             else
-              default_display_value = submit64_association_default_label(row)
+              association_data[:label] = submit64_association_default_label(row)
             end
-            field[:default_display_value] = default_display_value
+            field[:association_data] = association_data
             resource_data_json[field[:field_name]] = row[association_class.primary_key.to_sym]
           elsif field[:field_type] == "selectHasMany"
-            default_display_value = []
             resource_data_json[field[:field_name]] = []
             builder_rows = builder_rows.and(association_class.where({ relation_data.foreign_key => resource_data[relation_data.association_primary_key] }))
+            association_data = {
+              label: [],
+              data: []
+            }
             builder_rows.each do |row|
               custom_display_value = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)
               if custom_display_value != nil
-                default_display_value << custom_display_value
+                association_data[:label] << custom_display_value
               else
-                default_display_value << submit64_association_default_label(row)
+                association_data[:label] << submit64_association_default_label(row)
               end
+              association_data[:data] << row
               resource_data_json[field[:field_name]] << row[association_class.primary_key.to_sym]
             end
-            field[:default_display_value] = default_display_value
+            field[:association_data] = association_data
           end
         end
       end
@@ -291,15 +298,18 @@ module Submit64
             if row.nil?
               next
             end
-            default_display_value = ""
+            association_data = {
+              label: "",
+              data: row
+            }
             custom_display_value = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)
             if custom_display_value != nil
-              default_display_value = custom_display_value
+              association_data[:label] = custom_display_value
             else
-              default_display_value = submit64_association_default_label(row)
+              association_data[:label] = submit64_association_default_label(row)
             end
             default_value = row[association_class.primary_key]
-            field[:default_display_value] = default_display_value
+            field[:association_data] = association_data
           when 'selectHasMany'
             association_class = field[:field_association_class]
             custom_select_column = submit64_try_model_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
@@ -314,18 +324,22 @@ module Submit64
             end
             builder_rows.and(association_class.where({ association_class.primary_key.to_sym => field[:default_value] }))
             rows = builder_rows
-            default_display_value = []
+            association_data = {
+              label: [],
+              data: []
+            }
             default_value = []
             rows.each do |row|
               custom_display_value = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)
               if custom_display_value != nil
-                default_display_value << custom_display_value
+                association_data[:label] << custom_display_value
               else
-                default_display_value << submit64_association_default_label(row)
+                association_data[:label] << submit64_association_default_label(row)
               end
+              association_data[:data] << row
               default_value << row[association_class.primary_key]
             end
-            field[:default_display_value] = default_display_value
+            field[:association_data] = association_data
           when 'checkbox'
             default_value = field[:default_value].to_s == "true"
           when 'number'

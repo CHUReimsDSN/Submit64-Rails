@@ -140,7 +140,27 @@ module Submit64
       skip_validation = form[:use_model_validations] == false
       success = false
       error_messages = []
-      resource_id = resource_instance.id || nil
+      resource_id = resource_instance.id || nil     
+
+      # Compute row ids from has_many to instance
+      all_has_many_association = resource_instance.reflect_on_all_associations(:has_many).map do |association|
+        {
+          name: association.name,
+          class: association.class
+        }
+      end
+      request_params[:resourceData].each do |key, value|
+        association_find = all_has_many_association.find do |asso_find|
+          asso_find[:name] == key
+        end
+        if value.class != Array
+          next
+        end
+        if association_find
+          value = association_find[:class].where({association_find.primary_key => value })
+        end
+      end
+
 
       # Valid each attributs
       is_valid = true
@@ -155,7 +175,6 @@ module Submit64
       end
 
       if skip_validation || is_valid
-        # Avoid double checks, .valid? already does it
         # May raise exception from active record callbacks, not Submit64 responsability
         resource_instance.save!(validate: false)
         success = true

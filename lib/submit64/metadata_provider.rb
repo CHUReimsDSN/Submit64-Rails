@@ -235,7 +235,7 @@ module Submit64
             else
               association_data[:label] = submit64_association_default_label(row)
             end
-            field[:association_data] = association_data
+            field[:field_association_data] = association_data
             resource_data_json[field[:field_name]] = row[association_class.primary_key.to_sym]
           elsif field[:field_type] == "selectHasMany"
             resource_data_json[field[:field_name]] = []
@@ -254,7 +254,7 @@ module Submit64
               association_data[:data] << row
               resource_data_json[field[:field_name]] << row[association_class.primary_key.to_sym]
             end
-            field[:association_data] = association_data
+            field[:field_association_data] = association_data
           end
         end
       end
@@ -309,7 +309,7 @@ module Submit64
               association_data[:label] = submit64_association_default_label(row)
             end
             default_value = row[association_class.primary_key]
-            field[:association_data] = association_data
+            field[:field_association_data] = association_data
           when 'selectHasMany'
             association_class = field[:field_association_class]
             custom_select_column = submit64_try_model_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
@@ -339,7 +339,7 @@ module Submit64
               association_data[:data] << row
               default_value << row[association_class.primary_key]
             end
-            field[:association_data] = association_data
+            field[:field_association_data] = association_data
           when 'checkbox'
             default_value = field[:default_value].to_s == "true"
           when 'number'

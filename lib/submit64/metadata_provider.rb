@@ -151,7 +151,7 @@ module Submit64
       end
       request_params[:resourceData].each do |key, value|
         association_find = all_has_many_association.find do |asso_find|
-          asso_find[:name] == key
+          asso_find[:name] == key.to_sym
         end
         if association_find
           if value.class != Array

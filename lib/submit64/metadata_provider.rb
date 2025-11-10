@@ -176,7 +176,7 @@ module Submit64
           end
         end
         associations_data.each do |key, value|
-          resource_instance[key.to_sym] = value
+          resource_instance.public_send("#{key}=", value)
         end
       end     
 

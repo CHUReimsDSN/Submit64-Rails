@@ -161,9 +161,7 @@ module Submit64
           associations_data[key.to_sym] = association_find[:klass].where({ association_find[:klass].primary_key => value })
         end
       end
-      associations_data.keys.each do |key|
-        request_params[:resourceData].delete(key.to_s)
-      end
+
 
       # Valid each attributs
       is_valid = true
@@ -175,10 +173,7 @@ module Submit64
             break
           end
         end
-        associations_data.each do |key, value|
-          resource_instance.public_send("#{key}=", value)
-        end
-      end     
+      end
 
       if skip_validation || is_valid
         # May raise exception from active record callbacks, not Submit64 responsability

@@ -143,6 +143,7 @@ module Submit64
       resource_id = resource_instance.id || nil     
 
       # Compute row ids from has_many to instance
+      associations_data = {}
       all_has_many_association = self.reflect_on_all_associations(:has_many).map do |association|
         {
           name: association.name,
@@ -157,10 +158,12 @@ module Submit64
           if value.class != Array
             next
           end
-          request_params[:resourceData][key] = association_find[:klass].where({ association_find[:klass].primary_key => value })
+          associations_data[key.to_sym] = association_find[:klass].where({ association_find[:klass].primary_key => value })
         end
       end
-
+      associations_data.keys.each do |key|
+        request_params[:resourceData].delete(key.to_s)
+      end
 
       # Valid each attributs
       is_valid = true
@@ -172,7 +175,10 @@ module Submit64
             break
           end
         end
-      end
+        associations_data.each do |key, value|
+          resource_instance[key] = value
+        end
+      end     
 
       if skip_validation || is_valid
         # May raise exception from active record callbacks, not Submit64 responsability

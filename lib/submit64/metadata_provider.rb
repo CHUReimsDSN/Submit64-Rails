@@ -178,7 +178,7 @@ module Submit64
       is_valid = true
       if !skip_validation
         begin
-          resource_instance.assign_attributes(request_params[:resourceData]) # TODO ne save pas les associations has_many, ni ???!
+          resource_instance.assign_attributes(request_params[:resourceData]) # TODO ne save pas les associations has_many ???!
         rescue => exception
           if exception.class == ActiveRecord::RecordNotSaved
             if exception.message.include? "because one or more of the new records could not be saved"
@@ -813,12 +813,15 @@ module Submit64
             field_association_name = nil
             field_association_class = nil
           else
+            if association.polymorphic
+              next # TODO
+            end
             field_name = field_map[:target]
             form_field_type = self.submit64_get_form_field_type_by_association(association)
             form_rules = self.submit64_get_column_rules(field_map, nil, form_metadata, context[:name])
             form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
             field_association_name = association.name
-            field_association_class = association.klass
+            field_association_class =  association.klass
           end
           {
             field_name: field_name,

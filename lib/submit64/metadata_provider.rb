@@ -92,7 +92,8 @@ module Submit64
         end
         {
           label: label,
-          value: row[self.primary_key.to_sym]
+          value: row[self.primary_key.to_sym],
+          data: row
         }
       end
 
@@ -138,13 +139,46 @@ module Submit64
 
       skip_validation = form[:use_model_validations] == false
       success = false
-      error_messages = []
-      resource_id = resource_instance.id || nil
+      error_messages = {}
+      resource_id = resource_instance.id || nil     
+
+      # Compute row ids from has_many to instance
+      all_has_many_association = self.reflect_on_all_associations(:has_many).map do |association|
+        {
+          name: association.name,
+          klass: association.klass
+        }
+      end
+      request_params[:resourceData].each do |key, value|
+        association_find = all_has_many_association.find do |asso_find|
+          asso_find[:name] == key.to_sym
+        end
+        if association_find
+          if value.class != Array
+            next
+          end
+          request_params[:resourceData][key] = association_find[:klass].where({ association_find[:klass].primary_key => value })
+        end
+      end
+
 
       # Valid each attributs
       is_valid = true
       if !skip_validation
-        resource_instance.assign_attributes(request_params[:resourceData])
+        begin
+          resource_instance.assign_attributes(request_params[:resourceData])
+        rescue => exception
+          if exception.class == ActiveRecord::RecordNotSaved
+            if exception.message.include? "because one or more of the new records could not be saved"
+              error_messages["backend"] = ["Association impossible car un des '#{exception.message.split("replace").second.split(" ").first} n'est pas valide'"]
+              return {
+                success: false,
+                resource_id: resource_id,
+                errors: error_messages
+              }
+            end
+          end
+        end
         request_params[:resourceData].keys.each do |resource_key|
           if !submit64_valid_attribute?(resource_instance, resource_key)
             is_valid = false
@@ -154,7 +188,6 @@ module Submit64
       end
 
       if skip_validation || is_valid
-        # Avoid double checks, .valid? already does it
         # May raise exception from active record callbacks, not Submit64 responsability
         resource_instance.save!(validate: false)
         success = true
@@ -190,7 +223,7 @@ module Submit64
           else
             relation_data = self.reflect_on_association(field[:field_association_name])
             if relation_data.class.to_s.demodulize == "BelongsToReflection"
-              columns_to_select << relation_data.association_foreign_key
+              columns_to_select << relation_data.foreign_key
             end
             relations_data[field[:field_name]] = relation_data
           end
@@ -221,33 +254,40 @@ module Submit64
           relation_data =  relations_data[field[:field_name]]
 
           if field[:field_type] == "selectBelongsTo"
-            default_display_value = ""
-            row = builder_rows.and(association_class.where({ relation_data.association_primary_key => resource_data[relation_data.association_foreign_key] })).first
+            row = builder_rows.and(association_class.where({ relation_data.association_primary_key => resource_data[relation_data.foreign_key] })).first
             if row.nil?
               next
             end
+            association_data = {
+              label: "",
+              data: row
+            }
             custom_display_value = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)
             if custom_display_value != nil
-              default_display_value = custom_display_value
+              association_data[:label] = custom_display_value
             else
-              default_display_value = submit64_association_default_label(row)
+              association_data[:label] = submit64_association_default_label(row)
             end
-            field[:default_display_value] = default_display_value
+            field[:field_association_data] = association_data
             resource_data_json[field[:field_name]] = row[association_class.primary_key.to_sym]
           elsif field[:field_type] == "selectHasMany"
-            default_display_value = []
             resource_data_json[field[:field_name]] = []
             builder_rows = builder_rows.and(association_class.where({ relation_data.foreign_key => resource_data[relation_data.association_primary_key] }))
+            association_data = {
+              label: [],
+              data: []
+            }
             builder_rows.each do |row|
               custom_display_value = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)
               if custom_display_value != nil
-                default_display_value << custom_display_value
+                association_data[:label] << custom_display_value
               else
-                default_display_value << submit64_association_default_label(row)
+                association_data[:label] << submit64_association_default_label(row)
               end
+              association_data[:data] << row
               resource_data_json[field[:field_name]] << row[association_class.primary_key.to_sym]
             end
-            field[:default_display_value] = default_display_value
+            field[:field_association_data] = association_data
           end
         end
       end
@@ -291,15 +331,18 @@ module Submit64
             if row.nil?
               next
             end
-            default_display_value = ""
+            association_data = {
+              label: "",
+              data: row
+            }
             custom_display_value = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)
             if custom_display_value != nil
-              default_display_value = custom_display_value
+              association_data[:label] = custom_display_value
             else
-              default_display_value = submit64_association_default_label(row)
+              association_data[:label] = submit64_association_default_label(row)
             end
             default_value = row[association_class.primary_key]
-            field[:default_display_value] = default_display_value
+            field[:field_association_data] = association_data
           when 'selectHasMany'
             association_class = field[:field_association_class]
             custom_select_column = submit64_try_model_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
@@ -314,18 +357,22 @@ module Submit64
             end
             builder_rows.and(association_class.where({ association_class.primary_key.to_sym => field[:default_value] }))
             rows = builder_rows
-            default_display_value = []
+            association_data = {
+              label: [],
+              data: []
+            }
             default_value = []
             rows.each do |row|
               custom_display_value = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)
               if custom_display_value != nil
-                default_display_value << custom_display_value
+                association_data[:label] << custom_display_value
               else
-                default_display_value << submit64_association_default_label(row)
+                association_data[:label] << submit64_association_default_label(row)
               end
+              association_data[:data] << row
               default_value << row[association_class.primary_key]
             end
-            field[:default_display_value] = default_display_value
+            field[:field_association_data] = association_data
           when 'checkbox'
             default_value = field[:default_value].to_s == "true"
           when 'number'
@@ -771,7 +818,7 @@ module Submit64
             suffix: field_map[:suffix],
             readonly: field_map[:readonly],
             rules: form_rules,
-            select_options: form_select_options,
+            static_select_options: form_select_options,
             css_class: field_map[:css_class],
             css_class_readonly: field_map[:css_class_readonly],
             default_value: field_map[:default_value]

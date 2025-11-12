@@ -813,7 +813,7 @@ module Submit64
             field_association_name = nil
             field_association_class = nil
           else
-            if association.polymorphic
+            if association.options[:polymorphic] == true
               next # TODO
             end
             field_name = field_map[:target]

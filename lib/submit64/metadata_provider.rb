@@ -81,9 +81,10 @@ module Submit64
           label_filter_builder = label_filter_builder.or(builder_statement)
         end
         builder_rows = builder_rows.and(label_filter_builder)
-        if association_scope
-          builder_rows = builder_rows.and(association_scope)
-        end
+        
+      end
+      if association_scope
+        builder_rows = builder_rows.and(association_scope)
       end
       builder_row_count = builder_rows.reselect(association_class.primary_key.to_sym).count
       builder_rows = builder_rows.limit(limit).offset(offset).map do |row|

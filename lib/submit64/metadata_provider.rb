@@ -256,6 +256,9 @@ module Submit64
                           .where({ self.primary_key.to_sym => request_params[:resourceId] })
                           .first
       resource_data_json = resource_data.as_json
+      if resource_data_json.nil?
+        resource_data_json = {}
+      end
 
       form_metadata[:sections].each do |section|
         section[:fields].each do |field|
@@ -299,7 +302,7 @@ module Submit64
             resource_data_json[field[:field_name]] = row[association_class.primary_key.to_sym]
           elsif field[:field_type] == "selectHasMany"
             resource_data_json[field[:field_name]] = []
-            builder_rows = builder_rows.and(association_class.where({ relation_data.foreign_key => resource_data[relation_data.primary_key] }))
+            builder_rows = builder_rows.and(association_class.where({ relation_data.foreign_key => resource_data[relation_data.join_foreign_key] }))
             association_scope = relation_data.scope
             if association_scope
               builder_rows = builder_rows.and(association_scope.call(resource_data))

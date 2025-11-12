@@ -143,13 +143,17 @@ module Submit64
       resource_id = resource_instance.id || nil     
 
       # Compute row ids from association to instance
-      all_has_many_association = self.reflect_on_all_associations(:has_many).map do |association|
+      all_has_many_association = self.reflect_on_all_associations(:has_many).filter do |association|
+        association.options[:polymorphic] != true
+      end.map do |association|
         {
           name: association.name,
           klass: association.klass
         }
       end
-      all_belongs_to_association = self.reflect_on_all_associations(:belongs_to).map do |association|
+      all_belongs_to_association = self.reflect_on_all_associations(:belongs_to).filter do |association|
+        association.options[:polymorphic] != true
+      end.map do |association|
         {
           name: association.name,
           klass: association.klass

@@ -182,7 +182,7 @@ module Submit64
       is_valid = true
       if !skip_validation
         begin
-          resource_instance.assign_attributes(request_params[:resourceData]) # TODO ne save pas les associations has_many ???!
+          resource_instance.assign_attributes(request_params[:resourceData])
         rescue => exception
           if exception.class == ActiveRecord::RecordNotSaved
             if exception.message.include? "because one or more of the new records could not be saved"
@@ -868,7 +868,7 @@ module Submit64
     def submit64_valid_attribute?(resource_instance, attr)
       resource_instance.errors.delete(attr)
       resource_instance.class.validators_on(attr).map do |v|
-        v.validate_each(resource_instance, attr, resource_instance[attr])
+        v.validate_each(resource_instance, attr, resource_instance.method(attr.to_sym).call)
       end
       resource_instance.errors[attr].blank?
     end

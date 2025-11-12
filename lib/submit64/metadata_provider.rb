@@ -364,7 +364,7 @@ module Submit64
             association_scope = self.reflect_on_association(field[:field_association_name])&.scope
             if association_scope
               builder_rows = builder_rows.and(association_scope.call(nil))
-            end
+            end 
             row = builder_rows.first
             if row.nil?
               next

@@ -118,14 +118,14 @@ module Submit64
       else
         context = {}
       end
-      edit_mode = request_params[:resourceId] != nil
+      edit_mode = !request_params[:resourceId].nil? && request_params[:resourceId] != ""
       if !edit_mode
         resource_instance = self.new(request_params[:resourceData])
       else
-        resource_instance = self.find(request_params[:resourceId])
+        resource_instance = self.where({ self.primary_key => request_params[:resourceId] }).first
       end
       if resource_instance.nil?
-        raise Submit64Exception.new("Resource #{request_params[:resourceName]} with id #{request_params[:resourceId]} does not exist", 404)
+        raise Submit64Exception.new("Resource #{request_params[:resourceName]} with primary key '#{request_params[:resourceId]}' does not exist", 404)
       end
 
       # Check for not allowed attribute

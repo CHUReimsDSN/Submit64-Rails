@@ -120,7 +120,7 @@ module Submit64
       end
       edit_mode = !request_params[:resourceId].nil? && request_params[:resourceId] != ""
       if !edit_mode
-        resource_instance = self.new(request_params[:resourceData])
+        resource_instance = self.new
       else
         resource_instance = self.where({ self.primary_key => request_params[:resourceId] }).first
       end
@@ -767,8 +767,8 @@ module Submit64
         resource_name: self.to_s,
         css_class: '',
         css_class_readonly: '',
-        resetable: false,
-        clearable: false
+        resetable: true,
+        clearable: true
       }
     end
 

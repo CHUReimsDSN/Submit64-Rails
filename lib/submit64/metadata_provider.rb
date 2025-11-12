@@ -256,9 +256,6 @@ module Submit64
                           .where({ self.primary_key.to_sym => request_params[:resourceId] })
                           .first
       resource_data_json = resource_data.as_json
-      if resource_data_json.nil?
-        resource_data_json = {}
-      end
 
       form_metadata[:sections].each do |section|
         section[:fields].each do |field|

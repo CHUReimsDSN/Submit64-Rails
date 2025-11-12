@@ -279,8 +279,8 @@ module Submit64
           relation_data =  relations_data[field[:field_name]]
 
           if field[:field_type] == "selectBelongsTo"
+            builder_rows = builder_rows.and(association_class.where({ relation_data.join_foreign_key => resource_data[relation_data.join_primary_key] }))
             association_scope = relation_data.scope
-            builder_rows = builder_rows.and(association_class.where({ relation_data.primary_key => resource_data[relation_data.foreign_key] }))
             if association_scope
               builder_rows = builder_rows.and(association_scope.call(resource_data))
             end
@@ -302,7 +302,7 @@ module Submit64
             resource_data_json[field[:field_name]] = row[association_class.primary_key.to_sym]
           elsif field[:field_type] == "selectHasMany"
             resource_data_json[field[:field_name]] = []
-            builder_rows = builder_rows.and(association_class.where({ relation_data.foreign_key => resource_data[relation_data.join_foreign_key] }))
+            builder_rows = builder_rows.and(association_class.where({ relation_data.join_primary_key => resource_data[relation_data.join_foreign_key] }))
             association_scope = relation_data.scope
             if association_scope
               builder_rows = builder_rows.and(association_scope.call(resource_data))

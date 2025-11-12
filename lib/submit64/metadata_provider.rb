@@ -277,7 +277,7 @@ module Submit64
 
           if field[:field_type] == "selectBelongsTo"
             association_scope = relation_data.scope
-            builder_rows = builder_rows.and(association_class.where({ relation_data.association_primary_key => resource_data[relation_data.foreign_key] }))
+            builder_rows = builder_rows.and(association_class.where({ relation_data.primary_key => resource_data[relation_data.foreign_key] }))
             if association_scope
               builder_rows = builder_rows.and(association_scope.call(resource_data))
             end

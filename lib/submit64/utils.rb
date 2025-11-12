@@ -14,6 +14,7 @@ module Submit64
     params.permit(
       submit64Params: [
         :resourceName,
+        :resourceId,
         :associationName,
         :labelFilter,
         :limit,

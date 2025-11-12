@@ -80,6 +80,11 @@ module Submit64
           label_filter_builder = label_filter_builder.or(builder_statement)
         end
         builder_rows = builder_rows.and(label_filter_builder)
+        
+      end
+      association_scope = association.scope
+      if association_scope
+        builder_rows = builder_rows.and(association_scope.call(self.where({ self.primary_key => request_params[:resourceId]} ).first))
       end
       builder_row_count = builder_rows.reselect(association_class.primary_key.to_sym).count
       builder_rows = builder_rows.limit(limit).offset(offset).map do |row|
@@ -142,25 +147,41 @@ module Submit64
       error_messages = {}
       resource_id = resource_instance.id || nil     
 
-      # Compute row ids from has_many to instance
-      all_has_many_association = self.reflect_on_all_associations(:has_many).map do |association|
+      # Compute row ids from association to instance
+      all_has_many_association = self.reflect_on_all_associations(:has_many).filter do |association|
+        association.options[:polymorphic] != true
+      end.map do |association|
+        {
+          name: association.name,
+          klass: association.klass
+        }
+      end
+      all_belongs_to_association = self.reflect_on_all_associations(:belongs_to).filter do |association|
+        association.options[:polymorphic] != true
+      end.map do |association|
         {
           name: association.name,
           klass: association.klass
         }
       end
       request_params[:resourceData].each do |key, value|
-        association_find = all_has_many_association.find do |asso_find|
+        association_belongs_to_find = all_belongs_to_association.find do |asso_find|
           asso_find[:name] == key.to_sym
         end
-        if association_find
+        if association_belongs_to_find
+          request_params[:resourceData][key] = association_belongs_to_find[:klass].where({ association_belongs_to_find[:klass].primary_key => value }).first
+          next
+        end
+        association_has_many_find = all_has_many_association.find do |asso_find|
+          asso_find[:name] == key.to_sym
+        end
+        if association_has_many_find
           if value.class != Array
             next
           end
-          request_params[:resourceData][key] = association_find[:klass].where({ association_find[:klass].primary_key => value })
+          request_params[:resourceData][key] = association_has_many_find[:klass].where({ association_has_many_find[:klass].primary_key => value })
         end
       end
-
 
       # Valid each attributs
       is_valid = true
@@ -170,7 +191,7 @@ module Submit64
         rescue => exception
           if exception.class == ActiveRecord::RecordNotSaved
             if exception.message.include? "because one or more of the new records could not be saved"
-              error_messages["backend"] = ["Association impossible car un des '#{exception.message.split("replace").second.split(" ").first} n'est pas valide'"]
+              error_messages["backend"] = ["Association impossible car un/une des '#{exception.message.split("replace").second.split(" ").first}' n'est pas valide'"]
               return {
                 success: false,
                 resource_id: resource_id,
@@ -187,9 +208,10 @@ module Submit64
         end
       end
 
+      resource_data_renew = nil
       if skip_validation || is_valid
         # May raise exception from active record callbacks, not Submit64 responsability
-        resource_instance.save!(validate: false)
+        resource_instance.save!(validate: false) # already validated
         success = true
         resource_id = resource_instance.id
         params_for_form = {
@@ -234,6 +256,9 @@ module Submit64
                           .where({ self.primary_key.to_sym => request_params[:resourceId] })
                           .first
       resource_data_json = resource_data.as_json
+      if resource_data_json.nil?
+        resource_data_json = {}
+      end
 
       form_metadata[:sections].each do |section|
         section[:fields].each do |field|
@@ -254,7 +279,12 @@ module Submit64
           relation_data =  relations_data[field[:field_name]]
 
           if field[:field_type] == "selectBelongsTo"
-            row = builder_rows.and(association_class.where({ relation_data.association_primary_key => resource_data[relation_data.foreign_key] })).first
+            builder_rows = builder_rows.and(association_class.where({ relation_data.join_primary_key => resource_data[relation_data.join_foreign_key] }))
+            association_scope = relation_data.scope
+            if association_scope
+              builder_rows = builder_rows.and(association_scope.call(resource_data))
+            end
+            row = builder_rows.first
             if row.nil?
               next
             end
@@ -272,7 +302,11 @@ module Submit64
             resource_data_json[field[:field_name]] = row[association_class.primary_key.to_sym]
           elsif field[:field_type] == "selectHasMany"
             resource_data_json[field[:field_name]] = []
-            builder_rows = builder_rows.and(association_class.where({ relation_data.foreign_key => resource_data[relation_data.association_primary_key] }))
+            builder_rows = builder_rows.and(association_class.where({ relation_data.join_primary_key => resource_data[relation_data.join_foreign_key] }))
+            association_scope = relation_data.scope
+            if association_scope
+              builder_rows = builder_rows.and(association_scope.call(resource_data))
+            end
             association_data = {
               label: [],
               data: []
@@ -327,6 +361,10 @@ module Submit64
               builder_rows = builder_rows.and(custom_builder_row_filter)
             end
             builder_rows = builder_rows.and(association_class.where({ association_class.primary_key.to_sym => field[:default_value] }))
+            association_scope = self.reflect_on_association(field[:field_association_name])&.scope
+            if association_scope
+              builder_rows = builder_rows.and(association_scope.call(nil))
+            end 
             row = builder_rows.first
             if row.nil?
               next
@@ -356,6 +394,10 @@ module Submit64
               builder_rows = builder_rows.and(custom_builder_row_filter)
             end
             builder_rows.and(association_class.where({ association_class.primary_key.to_sym => field[:default_value] }))
+            association_scope = self.reflect_on_association(field[:field_association_name])&.scope
+            if association_scope
+              builder_rows = builder_rows.and(association_scope.call(nil))
+            end
             rows = builder_rows
             association_data = {
               label: [],
@@ -772,7 +814,8 @@ module Submit64
             end
           end
           if !field[:target].nil?
-            if self.columns_hash[field[:target].to_s].nil? && self.reflect_on_association(field[:target]).nil?
+            association = self.reflect_on_association(field[:target])
+            if self.columns_hash[field[:target].to_s].nil? && (association.nil? || association.options[:polymorphic] == true) # TODO
               field_index_to_purge << index_field
             end
           else
@@ -805,7 +848,7 @@ module Submit64
             form_rules = self.submit64_get_column_rules(field_map, nil, form_metadata, context[:name])
             form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
             field_association_name = association.name
-            field_association_class = association.klass
+            field_association_class =  association.klass
           end
           {
             field_name: field_name,
@@ -850,7 +893,7 @@ module Submit64
     def submit64_valid_attribute?(resource_instance, attr)
       resource_instance.errors.delete(attr)
       resource_instance.class.validators_on(attr).map do |v|
-        v.validate_each(resource_instance, attr, resource_instance[attr])
+        v.validate_each(resource_instance, attr, resource_instance.method(attr.to_sym).call)
       end
       resource_instance.errors[attr].blank?
     end

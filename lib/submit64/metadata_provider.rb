@@ -48,7 +48,6 @@ module Submit64
       end
       from_class = self.to_s
       association_class = association.klass
-      association_scope = association.scope
       default_limit = Submit64.get_association_data_pagination_limit
       limit = request_params[:limit] || default_limit
       if limit > default_limit
@@ -83,6 +82,7 @@ module Submit64
         builder_rows = builder_rows.and(label_filter_builder)
         
       end
+      association_scope = association.scope
       if association_scope
         builder_rows = builder_rows.and(association_scope.call(self.where({ self.primary_key => request_params[:resourceId]} ).first))
       end
@@ -276,7 +276,12 @@ module Submit64
           relation_data =  relations_data[field[:field_name]]
 
           if field[:field_type] == "selectBelongsTo"
-            row = builder_rows.and(association_class.where({ relation_data.association_primary_key => resource_data[relation_data.foreign_key] })).first
+            association_scope = relation_data.scope
+            builder_rows = builder_rows.and(association_class.where({ relation_data.association_primary_key => resource_data[relation_data.foreign_key] }))
+            if association_scope
+              builder_rows = builder_rows.and(association_scope.call(resource_data))
+            end
+            row = builder_rows.first
             if row.nil?
               next
             end
@@ -295,6 +300,10 @@ module Submit64
           elsif field[:field_type] == "selectHasMany"
             resource_data_json[field[:field_name]] = []
             builder_rows = builder_rows.and(association_class.where({ relation_data.foreign_key => resource_data[relation_data.association_primary_key] }))
+            association_scope = relation_data.scope
+            if association_scope
+              builder_rows = builder_rows.and(association_scope.call(resource_data))
+            end
             association_data = {
               label: [],
               data: []
@@ -349,6 +358,10 @@ module Submit64
               builder_rows = builder_rows.and(custom_builder_row_filter)
             end
             builder_rows = builder_rows.and(association_class.where({ association_class.primary_key.to_sym => field[:default_value] }))
+            association_scope = self.reflect_on_association(field[:field_association_name])&.scope
+            if association_scope
+              builder_rows = builder_rows.and(association_scope.call(nil))
+            end
             row = builder_rows.first
             if row.nil?
               next
@@ -378,6 +391,10 @@ module Submit64
               builder_rows = builder_rows.and(custom_builder_row_filter)
             end
             builder_rows.and(association_class.where({ association_class.primary_key.to_sym => field[:default_value] }))
+            association_scope = self.reflect_on_association(field[:field_association_name])&.scope
+            if association_scope
+              builder_rows = builder_rows.and(association_scope.call(nil))
+            end
             rows = builder_rows
             association_data = {
               label: [],

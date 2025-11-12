@@ -255,7 +255,7 @@ module Submit64
                           .select(columns_to_select)
                           .where({ self.primary_key.to_sym => request_params[:resourceId] })
                           .first
-      if resource_data.nil
+      if resource_data.nil?
         return [{}, form_metadata]
       end
 

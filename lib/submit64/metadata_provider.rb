@@ -420,7 +420,7 @@ module Submit64
             default_value = field[:default_value].to_s == "true"
           when 'number'
             field_default_value = field[:default_value]
-            default_value = field_default_value.float? ? field_default_value.to_f : field_default_value;to_i
+            default_value = field_default_value % 1 == 0 ? field_default_value.to_f : field_default_value.to_i
           when 'object'
             default_value = field[:default_value]
           end

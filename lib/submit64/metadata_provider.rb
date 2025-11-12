@@ -21,7 +21,7 @@ module Submit64
       end
       form_metadata = self.submit64_get_form(context)
 
-      if request_params[:resourceId]
+      if !request_params[:resourceId].nil? && request_params[:resourceId] != ""
         resource_data, form_metadata = submit64_get_resource_data(form_metadata, request_params, context)
       else
         resource_data, form_metadata = submit64_get_default_value_data(form_metadata, context)
@@ -255,6 +255,10 @@ module Submit64
                           .select(columns_to_select)
                           .where({ self.primary_key.to_sym => request_params[:resourceId] })
                           .first
+      if resource_data.nil
+        return [{}, form_metadata]
+      end
+
       resource_data_json = resource_data.as_json
 
       form_metadata[:sections].each do |section|

@@ -48,6 +48,7 @@ module Submit64
       end
       from_class = self.to_s
       association_class = association.klass
+      association_scope = association.scope
       default_limit = Submit64.get_association_data_pagination_limit
       limit = request_params[:limit] || default_limit
       if limit > default_limit
@@ -80,6 +81,9 @@ module Submit64
           label_filter_builder = label_filter_builder.or(builder_statement)
         end
         builder_rows = builder_rows.and(label_filter_builder)
+        if association_scope
+          builder_rows = builder_rows.and(association_scope)
+        end
       end
       builder_row_count = builder_rows.reselect(association_class.primary_key.to_sym).count
       builder_rows = builder_rows.limit(limit).offset(offset).map do |row|

@@ -157,7 +157,7 @@ type FieldHash = {
 
 <br /><br />
 
-## submit64_form_builder
+## submit64_association_filter_rows
 
 ```ruby
 def submit64_association_filter_rows: (FromClass?, Context?) -> ActiveRecord::Relation
@@ -199,7 +199,7 @@ type FromClass = String
 ## submit64_association_label
 
 ```ruby
-def submit64_association_select_columns: (FromClass?, Context?) -> String
+def submit64_association_label: (FromClass?, Context?) -> String
 ```
 
 ```typescript

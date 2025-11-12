@@ -142,35 +142,47 @@ module Submit64
       error_messages = {}
       resource_id = resource_instance.id || nil     
 
-      # Compute row ids from has_many to instance
+      # Compute row ids from association to instance
       all_has_many_association = self.reflect_on_all_associations(:has_many).map do |association|
         {
           name: association.name,
           klass: association.klass
         }
       end
+      all_belongs_to_association = self.reflect_on_all_associations(:belongs_to).map do |association|
+        {
+          name: association.name,
+          klass: association.klass
+        }
+      end
       request_params[:resourceData].each do |key, value|
-        association_find = all_has_many_association.find do |asso_find|
+        association_belongs_to_find = all_belongs_to_association.find do |asso_find|
           asso_find[:name] == key.to_sym
         end
-        if association_find
+        if association_belongs_to_find
+          request_params[:resourceData][key] = association_belongs_to_find[:klass].where({ association_belongs_to_find[:klass].primary_key => value }).first
+          next
+        end
+        association_has_many_find = all_has_many_association.find do |asso_find|
+          asso_find[:name] == key.to_sym
+        end
+        if association_has_many_find
           if value.class != Array
             next
           end
-          request_params[:resourceData][key] = association_find[:klass].where({ association_find[:klass].primary_key => value })
+          request_params[:resourceData][key] = association_has_many_find[:klass].where({ association_has_many_find[:klass].primary_key => value })
         end
       end
-
 
       # Valid each attributs
       is_valid = true
       if !skip_validation
         begin
-          resource_instance.assign_attributes(request_params[:resourceData])
+          resource_instance.assign_attributes(request_params[:resourceData]) # TODO ne save pas les associations has_many, ni ???!
         rescue => exception
           if exception.class == ActiveRecord::RecordNotSaved
             if exception.message.include? "because one or more of the new records could not be saved"
-              error_messages["backend"] = ["Association impossible car un des '#{exception.message.split("replace").second.split(" ").first} n'est pas valide'"]
+              error_messages["backend"] = ["Association impossible car un/une des '#{exception.message.split("replace").second.split(" ").first}' n'est pas valide'"]
               return {
                 success: false,
                 resource_id: resource_id,
@@ -187,9 +199,10 @@ module Submit64
         end
       end
 
+      resource_data_renew = nil
       if skip_validation || is_valid
         # May raise exception from active record callbacks, not Submit64 responsability
-        resource_instance.save!(validate: false)
+        resource_instance.save!(validate: false) # already validated
         success = true
         resource_id = resource_instance.id
         params_for_form = {

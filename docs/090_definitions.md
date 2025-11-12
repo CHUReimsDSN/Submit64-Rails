@@ -160,12 +160,12 @@ type FieldHash = {
 ## submit64_form_builder
 
 ```ruby
-def submit64_association_filter_rows: (FromClass?, Context?) -> ActiveRecord::Associations
+def submit64_association_filter_rows: (FromClass?, Context?) -> ActiveRecord::Relation
 ```
 
 ```typescript
-type Context = Hash[String, untyped]
 type FromClass = String
+type Context = Hash[String, untyped]
 ```
 
 <br /><br />

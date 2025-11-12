@@ -71,6 +71,7 @@ module Submit64
       }
     type get_association_data = {
         resourceName: String,
+        resourceId?: String | Integer,
         associationName: String,
         limit: Integer,
         offset: Integer,

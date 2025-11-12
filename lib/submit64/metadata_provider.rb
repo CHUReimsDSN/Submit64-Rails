@@ -84,7 +84,7 @@ module Submit64
         
       end
       if association_scope
-        builder_rows = builder_rows.and(association_scope)
+        builder_rows = builder_rows.and(association_scope.call(self.where({ self.primary_key => request_params[:resourceId]} ).first))
       end
       builder_row_count = builder_rows.reselect(association_class.primary_key.to_sym).count
       builder_rows = builder_rows.limit(limit).offset(offset).map do |row|

@@ -785,7 +785,8 @@ module Submit64
             end
           end
           if !field[:target].nil?
-            if self.columns_hash[field[:target].to_s].nil? && self.reflect_on_association(field[:target]).nil?
+            association = self.reflect_on_association(field[:target])
+            if self.columns_hash[field[:target].to_s].nil? && (association.nil? || association.options[:polymorphic] == true) # TODO
               field_index_to_purge << index_field
             end
           else
@@ -813,9 +814,6 @@ module Submit64
             field_association_name = nil
             field_association_class = nil
           else
-            if association.options[:polymorphic] == true
-              next # TODO
-            end
             field_name = field_map[:target]
             form_field_type = self.submit64_get_form_field_type_by_association(association)
             form_rules = self.submit64_get_column_rules(field_map, nil, form_metadata, context[:name])

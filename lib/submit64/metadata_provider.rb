@@ -84,7 +84,12 @@ module Submit64
       end
       association_scope = association.scope
       if association_scope
-        builder_rows = builder_rows.and(association_scope.call(self.where({ self.primary_key => request_params[:resourceId]} ).first))
+        if !request_params[:resourceId].nil? && request_params[:resourceId] != ""
+          resource_instance = self.where({ self.primary_key => request_params[:resourceId]}).first
+        else
+          resource_instance = nil
+        end
+        builder_rows = builder_rows.and(association_scope.call(resource_instance))
       end
       builder_row_count = builder_rows.reselect(association_class.primary_key.to_sym).count
       builder_rows = builder_rows.limit(limit).offset(offset).map do |row|
@@ -123,9 +128,9 @@ module Submit64
         resource_instance = self.new
       else
         resource_instance = self.where({ self.primary_key => request_params[:resourceId] }).first
-      end
-      if resource_instance.nil?
-        raise Submit64Exception.new("Resource #{request_params[:resourceName]} with primary key '#{request_params[:resourceId]}' does not exist", 404)
+        if resource_instance.nil?
+          raise Submit64Exception.new("Resource #{request_params[:resourceName]} with primary key '#{request_params[:resourceId]}' does not exist", 404)
+        end
       end
 
       # Check for not allowed attribute
@@ -169,7 +174,11 @@ module Submit64
           asso_find[:name] == key.to_sym
         end
         if association_belongs_to_find
-          request_params[:resourceData][key] = association_belongs_to_find[:klass].where({ association_belongs_to_find[:klass].primary_key => value }).first
+          belongs_to_class = association_belongs_to_find[:klass]
+          request_params[:resourceData][key] = belongs_to_class.all
+            .select([belongs_to_class.primary_key.to_sym])
+            .where({ belongs_to_class.primary_key => value })
+            .first
           next
         end
         association_has_many_find = all_has_many_association.find do |asso_find|
@@ -179,11 +188,14 @@ module Submit64
           if value.class != Array
             next
           end
-          request_params[:resourceData][key] = association_has_many_find[:klass].where({ association_has_many_find[:klass].primary_key => value })
+          has_many_class = association_has_many_find[:klass]
+          request_params[:resourceData][key] = has_many_class.all
+            .select([has_many_class.primary_key.to_sym])
+            .where({ has_many_class.primary_key => value })
         end
       end
 
-      # Valid each attributs
+      # Validate each attributs
       is_valid = true
       if !skip_validation
         begin
@@ -208,7 +220,11 @@ module Submit64
         end
       end
 
-      resource_data_renew = nil
+      # Additional models validation
+      if resource_instance.respond_to?(:validate)
+        resource_instance.method(:validate).call
+      end
+
       if skip_validation || is_valid
         # May raise exception from active record callbacks, not Submit64 responsability
         resource_instance.save!(validate: false) # already validated
@@ -222,6 +238,7 @@ module Submit64
         resource_data_renew = submit64_get_form_metadata_and_data(params_for_form)[:resource_data]
       else
         error_messages = resource_instance.errors.messages.deep_dup
+        resource_data_renew = nil
       end
       {
         success: success,
@@ -232,7 +249,6 @@ module Submit64
     end
 
     private
-
     def submit64_get_resource_data(form_metadata, request_params, context)
       from_class = self.to_s
       columns_to_select = [self.primary_key.to_sym]
@@ -256,7 +272,7 @@ module Submit64
                           .where({ self.primary_key.to_sym => request_params[:resourceId] })
                           .first
       if resource_data.nil?
-        return [{}, form_metadata]
+        raise Submit64Exception.new("Resource #{request_params[:resourceName]} with primary key '#{request_params[:resourceId]}' does not exist", 404)
       end
 
       resource_data_json = resource_data.as_json
@@ -290,14 +306,14 @@ module Submit64
               next
             end
             association_data = {
-              label: "",
-              data: row
+              label: [],
+              data: [row]
             }
             custom_display_value = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)
             if custom_display_value != nil
-              association_data[:label] = custom_display_value
+              association_data[:label] << custom_display_value
             else
-              association_data[:label] = submit64_association_default_label(row)
+              association_data[:label] << submit64_association_default_label(row)
             end
             field[:field_association_data] = association_data
             resource_data_json[field[:field_name]] = row[association_class.primary_key.to_sym]
@@ -371,14 +387,14 @@ module Submit64
               next
             end
             association_data = {
-              label: "",
-              data: row
+              label: [],
+              data: [row]
             }
             custom_display_value = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)
             if custom_display_value != nil
-              association_data[:label] = custom_display_value
+              association_data[:label] << custom_display_value
             else
-              association_data[:label] = submit64_association_default_label(row)
+              association_data[:label] << submit64_association_default_label(row)
             end
             default_value = row[association_class.primary_key]
             field[:field_association_data] = association_data

@@ -30,10 +30,14 @@ module Submit64
         resetable?: bool,
         clearable?: bool,
         readonly?: bool,
-        default_display_value?: String,
+        field_association_data?: associationData,
         statement?: Proc,
         default_value?: untyped
       }
+    type associationData = {
+        label: Array[String],
+        data: Array[resourceData],
+    }
     type rule = {
         type: String,
         backend_hint?: String,
@@ -91,14 +95,14 @@ module Submit64
         resource_data: resourceData
       }
     type get_association_data_response = {
-        rows: Array[Hash[String, untyped]],
+        rows: Array[resourceData],
         row_count: Integer
       }
     type get_submit_data_response = {
         success: bool,
         errors: Hash[String, Array[String]],
         resource_id: String | Integer | nil,
-        resource_data: Hash[string, untyped] | nil,
+        resource_data: resourceData | nil,
       }
 
 

@@ -8,7 +8,7 @@ Lors de la génération d'un champ d'association sur une autre table, il est pos
 des logiques supplémentaires, comme l'affichage des données, les filtres, etc.
 
 {: .highlight }
-Le type de relation HasMany n'est actuellement pas pris en charge.
+Les relations polymorphique ne sont actuellement pas pris en charge et donc ignorer
 
 
 ## Définir un champ de relation dans le formulaire  
@@ -127,7 +127,7 @@ Cette méthode doit être en accord avec les colonnes définies dans
 Cette méthode ne doit pas être statique.
 
 {: .note }
-Si cette méthode n'est pas définie, Submit64 essaie les méthodes `label`, `to_s`, et 
+Si cette méthode n'est pas définie, Submit64 essaie les méthodes `label`, `id`, et 
 `primary_key`.
 
 {: .warning }

@@ -53,12 +53,8 @@ module Submit64
   def self.safe_exec
     begin
       yield
-    rescue => e
-      if e.class == Submit64Exception
-        http_status = e.http_status
-      else
-        http_status = 500
-      end
+    rescue Submit64Exception => e
+      http_status = e.http_status
       exception = Submit64Exception.new_with_prefix("An error has occured : #{e}", http_status)
       exception.set_backtrace(e.backtrace)
       raise exception

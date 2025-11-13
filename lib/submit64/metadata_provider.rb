@@ -223,6 +223,9 @@ module Submit64
       # Additional models validation
       if resource_instance.respond_to?(:validate)
         resource_instance.method(:validate).call
+        if resource_instance.errors.count > 0
+          is_valid = false
+        end
       end
 
       if skip_validation || is_valid

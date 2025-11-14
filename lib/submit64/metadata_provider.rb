@@ -89,7 +89,7 @@ module Submit64
         else
           resource_instance = nil
         end
-        builder_rows = builder_rows.and(association_scope.call(resource_instance))
+        builder_rows = builder_rows.and(association_class.instance_exec(resource_instance, &association_scope))
       end
       builder_row_count = builder_rows.reselect(association_class.primary_key.to_sym).count
       builder_rows = builder_rows.limit(limit).offset(offset).map do |row|
@@ -300,7 +300,7 @@ module Submit64
             builder_rows = builder_rows.and(association_class.where({ relation_data.join_primary_key => resource_data[relation_data.join_foreign_key] }))
             association_scope = relation_data.scope
             if association_scope
-              builder_rows = builder_rows.and(association_scope.call(resource_data))
+              builder_rows = builder_rows.and(association_class.instance_exec(resource_data, &association_scope))
             end
             row = builder_rows.first
             if row.nil?
@@ -323,7 +323,7 @@ module Submit64
             builder_rows = builder_rows.and(association_class.where({ relation_data.join_primary_key => resource_data[relation_data.join_foreign_key] }))
             association_scope = relation_data.scope
             if association_scope
-              builder_rows = builder_rows.and(association_scope.call(resource_data))
+              builder_rows = builder_rows.and(association_class.instance_exec(resource_data, &association_scope))
             end
             association_data = {
               label: [],
@@ -381,7 +381,7 @@ module Submit64
             builder_rows = builder_rows.and(association_class.where({ association_class.primary_key.to_sym => field[:default_value] }))
             association_scope = self.reflect_on_association(field[:field_association_name])&.scope
             if association_scope
-              builder_rows = builder_rows.and(association_scope.call(nil))
+              builder_rows = builder_rows.and(association_class.instance_exec(nil, &association_scope))
             end 
             row = builder_rows.first
             if row.nil?
@@ -414,7 +414,7 @@ module Submit64
             builder_rows.and(association_class.where({ association_class.primary_key.to_sym => field[:default_value] }))
             association_scope = self.reflect_on_association(field[:field_association_name])&.scope
             if association_scope
-              builder_rows = builder_rows.and(association_scope.call(nil))
+              builder_rows = builder_rows.and(association_class.instance_exec(nil, &association_scope))
             end
             rows = builder_rows
             association_data = {
@@ -754,11 +754,7 @@ module Submit64
     def submit64_try_model_method_with_args(class_model, method_name, *args)
       if class_model.respond_to?(method_name, true)
         method_found = class_model.method(method_name)
-        if method_found.parameters.any?
-          return method_found.call(*args)
-        else
-          return method_found.call
-        end
+        return submit64_try_method_with_args(method_found, *args)
       end
       nil
     end
@@ -766,13 +762,17 @@ module Submit64
     def submit64_try_row_method_with_args(row, method_name, *args)
       if row.respond_to?(method_name, true)
         method_found = row.method(method_name)
-        if method_found.parameters.any?
-          return method_found.call(*args)
-        else
-          return method_found.call
-        end
+        return submit64_try_method_with_args(method_found, *args)
       end
       nil
+    end
+
+    def submit64_try_method_with_args(callback, *args)
+      if callback.parameters.any?
+        return callback.call(*args)
+      else
+        return callback.call
+      end
     end
 
     def submit64_get_default_form

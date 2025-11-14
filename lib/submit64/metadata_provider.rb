@@ -768,7 +768,7 @@ module Submit64
     end
 
     def submit64_try_method_with_args(callback, *args)
-      if method_name.parameters.any?
+      if callback.parameters.any?
         return callback.call(*args)
       else
         return callback.call

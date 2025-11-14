@@ -754,7 +754,7 @@ module Submit64
     def submit64_try_model_method_with_args(class_model, method_name, *args)
       if class_model.respond_to?(method_name, true)
         method_found = class_model.method(method_name)
-        submit64_try_method_with_args(method_found, *args)
+        return submit64_try_method_with_args(method_found, *args)
       end
       nil
     end
@@ -762,7 +762,7 @@ module Submit64
     def submit64_try_row_method_with_args(row, method_name, *args)
       if row.respond_to?(method_name, true)
         method_found = row.method(method_name)
-        submit64_try_method_with_args(method_found, *args)
+        return submit64_try_method_with_args(method_found, *args)
       end
       nil
     end

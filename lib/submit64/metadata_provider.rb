@@ -176,7 +176,6 @@ module Submit64
         if association_belongs_to_find
           belongs_to_class = association_belongs_to_find[:klass]
           request_params[:resourceData][key] = belongs_to_class.all
-            .select([belongs_to_class.primary_key.to_sym])
             .where({ belongs_to_class.primary_key => value })
             .first
           next
@@ -190,7 +189,6 @@ module Submit64
           end
           has_many_class = association_has_many_find[:klass]
           request_params[:resourceData][key] = has_many_class.all
-            .select([has_many_class.primary_key.to_sym])
             .where({ has_many_class.primary_key => value })
         end
       end

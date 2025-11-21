@@ -287,18 +287,23 @@ module Submit64
             next
           end
           association_class = field[:field_association_class]
+          relation = self.reflect_on_association(field[:field_association_name])
           custom_select_column = submit64_try_model_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
-          if custom_select_column != nil
-            builder_rows = resource_data.public_send(field[:field_association_name]).select([*custom_select_column, association_class.primary_key.to_sym]).all
-          else
-            builder_rows = resource_data.public_send(field[:field_association_name]).all
-          end
           custom_builder_row_filter = submit64_try_model_method_with_args(association_class, :submit64_association_filter_rows, from_class, context)
-          if custom_builder_row_filter != nil
-            builder_rows = builder_rows.and(custom_builder_row_filter)
-          end
           case field[:field_type]
-            when "selectBelongsTo"
+            when "selectBelongsTo", "selectHasOne"
+              if custom_select_column != nil
+                builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym])
+                                                .where({ association_class.primary_key.to_sym => relation.foreign_key })
+              else
+                builder_rows = association_class.where({ association_class.primary_key.to_sym => relation.foreign_key })
+              end
+              if custom_builder_row_filter != nil
+                builder_rows = builder_rows.and(custom_builder_row_filter)
+              end
+              if relation.scope
+                builder_rows = builder_rows.and(association_class.instance_exec(resource_data, &relation.scope))
+              end 
               row = builder_rows.first
               if row.nil?
                 next
@@ -315,7 +320,15 @@ module Submit64
               end
               field[:field_association_data] = association_data
               resource_data_json[field[:field_name]] = row[association_class.primary_key.to_sym]
-            when "selectHasMany"
+            when "selectHasMany", "selectHasAndBelongsToMany"
+              if custom_select_column != nil
+                builder_rows = resource_data.public_send(field[:field_association_name]).select([*custom_select_column, association_class.primary_key.to_sym])
+              else
+                builder_rows = resource_data.public_send(field[:field_association_name])
+              end
+              if custom_builder_row_filter != nil
+                builder_rows = builder_rows.and(custom_builder_row_filter)
+              end
               resource_data_json[field[:field_name]] = []
               association_data = {
                 label: [],
@@ -359,7 +372,7 @@ module Submit64
             default_value = field[:default_value].to_s            
           when 'selectString'
             default_value = field[:default_value].to_a
-          when 'selectBelongsTo', 'selectHasMany'
+          when 'selectBelongsTo', 'selectHasMany', 'selectHasOne', 'selectHasAndBelongsToMany'
             association_class = field[:field_association_class]
             custom_select_column = submit64_try_model_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
             if custom_select_column != nil
@@ -376,7 +389,7 @@ module Submit64
             if association_scope
               builder_rows = builder_rows.and(association_class.instance_exec(nil, &association_scope))
             end 
-            if field[:field_type] == 'selectBelongsTo'
+            if field[:field_type] == 'selectBelongsTo' || field[:field_type] == 'selectHasOne'
                 row = builder_rows.first
               if row.nil?
                 next
@@ -393,7 +406,7 @@ module Submit64
               end
               default_value = row[association_class.primary_key]
               field[:field_association_data] = association_data
-            elsif field[:field_type] == 'selectHasMany'
+            elsif field[:field_type] == 'selectHasMany' || field[:field_type] == 'selectHasAndBelongsToMany'
               rows = builder_rows
               association_data = {
                 label: [],

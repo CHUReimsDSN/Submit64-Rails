@@ -188,7 +188,7 @@ module Submit64
           builder_rows = builder_rows.and(custom_builder_row_filter)
         end
         builder_rows = builder_rows.and(association_class.where({ association_class.primary_key.to_sym => value }))
-        association_scope = self.reflect_on_association(field[:field_association_name])&.scope
+        association_scope = self.reflect_on_association(association_found[:name])&.scope
         if association_scope
           builder_rows = builder_rows.and(association_class.instance_exec(nil, &association_scope))
         end 

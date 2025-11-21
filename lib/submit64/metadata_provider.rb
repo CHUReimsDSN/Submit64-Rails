@@ -194,9 +194,9 @@ module Submit64
         end 
 
         if association_found[:type] == 'selectBelongsTo' || association_found[:type] == 'selectBelongsToThrough'
-          request_params[:resourceData][key] = builder_rows              
+          request_params[:resourceData][key] = builder_rows.first           
         else
-          request_params[:resourceData][key] = builder_rows.first
+          request_params[:resourceData][key] = builder_rows
         end
       end
 

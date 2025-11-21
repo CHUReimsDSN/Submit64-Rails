@@ -175,7 +175,7 @@ module Submit64
         if association_found.nil?
           next
         end
-        association_class = association_found
+        association_class = association_found[:klass]
         from_class = self.to_s
         custom_select_column = submit64_try_model_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
         if custom_select_column != nil

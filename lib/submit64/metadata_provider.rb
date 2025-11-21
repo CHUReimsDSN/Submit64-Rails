@@ -298,9 +298,9 @@ module Submit64
             when "selectBelongsTo", "selectHasOne"
               if custom_select_column != nil
                 builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym])
-                                                .where({ association_class.primary_key.to_sym => relation.foreign_key })
+                                                .where({ association_class.primary_key.to_sym => resource_data[relation.join_foreign_key] })
               else
-                builder_rows = association_class.where({ association_class.primary_key.to_sym => relation.foreign_key })
+                builder_rows = association_class.where({ association_class.primary_key.to_sym => resource_data[relation.join_foreign_key] })
               end
               if custom_builder_row_filter != nil
                 builder_rows = builder_rows.and(custom_builder_row_filter)

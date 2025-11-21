@@ -497,6 +497,17 @@ module Submit64
         return "selectBelongsTo"
       when "HasManyReflection"
         return "selectHasMany"
+      when "ThroughReflection"
+        if association.source_reflection.nil?
+          return "???"
+        end
+        if association.macro == :has_many
+          return "selectHasMany"
+        end
+        if association.macro == :belongs_to
+          return "selectBelongsTo"
+        end
+        return "???"
       else
         return "???"
       end
@@ -783,7 +794,6 @@ module Submit64
         backend_datetime_format: 'YYYY-MM-DDTHH:mm:ss.SSSZ',
         resource_name: self.to_s,
         css_class: '',
-        css_class_readonly: '',
         resetable: true,
         clearable: true
       }
@@ -881,17 +891,16 @@ module Submit64
             rules: form_rules,
             static_select_options: form_select_options,
             css_class: field_map[:css_class],
-            css_class_readonly: field_map[:css_class_readonly],
             default_value: field_map[:default_value]
           }
         end
         {
           fields: fields,
+          name: section_map[:name],
           label: section_map[:label],
           icon: section_map[:icon],
           readonly: section_map[:readonly],
           css_class: section_map[:css_class],
-          css_class_readonly: section_map[:css_class_readonly],
         }
       end
       {
@@ -901,7 +910,6 @@ module Submit64
         backend_date_format: form_metadata[:backend_date_format],
         backend_datetime_format: form_metadata[:backend_datetime_format],
         css_class: form_metadata[:css_class],
-        css_class_readonly: form_metadata[:css_class_readonly],
         resetable: form_metadata[:resetable],
         clearable: form_metadata[:clearable],
         readonly: form_metadata[:readonly],

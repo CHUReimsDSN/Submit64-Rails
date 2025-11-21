@@ -295,52 +295,53 @@ module Submit64
             builder_rows = builder_rows.and(custom_builder_row_filter)
           end
           relation_data =  relations_data[field[:field_name]]
-
-          if field[:field_type] == "selectBelongsTo"
-            builder_rows = builder_rows.and(association_class.where({ relation_data.join_primary_key => resource_data[relation_data.join_foreign_key] }))
-            association_scope = relation_data.scope
-            if association_scope
-              builder_rows = builder_rows.and(association_class.instance_exec(resource_data, &association_scope))
-            end
-            row = builder_rows.first
-            if row.nil?
-              next
-            end
-            association_data = {
-              label: [],
-              data: [row]
-            }
-            custom_display_value = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)
-            if custom_display_value != nil
-              association_data[:label] << custom_display_value
-            else
-              association_data[:label] << submit64_association_default_label(row)
-            end
-            field[:field_association_data] = association_data
-            resource_data_json[field[:field_name]] = row[association_class.primary_key.to_sym]
-          elsif field[:field_type] == "selectHasMany"
-            resource_data_json[field[:field_name]] = []
-            builder_rows = builder_rows.and(association_class.where({ relation_data.join_primary_key => resource_data[relation_data.join_foreign_key] }))
-            association_scope = relation_data.scope
-            if association_scope
-              builder_rows = builder_rows.and(association_class.instance_exec(resource_data, &association_scope))
-            end
-            association_data = {
-              label: [],
-              data: []
-            }
-            builder_rows.each do |row|
+          case field[:field_type]
+            when "selectBelongsTo", "selectBelongsToThrough"
+              builder_rows = builder_rows.and(association_class.where({ relation_data.join_primary_key => resource_data[relation_data.join_foreign_key] }))
+              association_scope = relation_data.scope
+              if association_scope
+                builder_rows = builder_rows.and(association_class.instance_exec(resource_data, &association_scope))
+              end
+              row = builder_rows.first
+              if row.nil?
+                next
+              end
+              association_data = {
+                label: [],
+                data: [row]
+              }
               custom_display_value = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)
               if custom_display_value != nil
                 association_data[:label] << custom_display_value
               else
                 association_data[:label] << submit64_association_default_label(row)
               end
-              association_data[:data] << row
-              resource_data_json[field[:field_name]] << row[association_class.primary_key.to_sym]
-            end
-            field[:field_association_data] = association_data
+              field[:field_association_data] = association_data
+              resource_data_json[field[:field_name]] = row[association_class.primary_key.to_sym]
+            when "selectHasMany", "selectHasManyThrough"
+              resource_data_json[field[:field_name]] = []
+              builder_rows = builder_rows.and(association_class.where({ relation_data.join_primary_key => resource_data[relation_data.join_foreign_key] }))
+              association_scope = relation_data.scope
+              if association_scope
+                builder_rows = builder_rows.and(association_class.instance_exec(resource_data, &association_scope))
+              end
+              association_data = {
+                label: [],
+                data: []
+              }
+              builder_rows.each do |row|
+                custom_display_value = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)
+                if custom_display_value != nil
+                  association_data[:label] << custom_display_value
+                else
+                  association_data[:label] << submit64_association_default_label(row)
+                end
+                association_data[:data] << row
+                resource_data_json[field[:field_name]] << row[association_class.primary_key.to_sym]
+              end
+              field[:field_association_data] = association_data
           end
+
         end
       end
       [resource_data_json, form_metadata]
@@ -366,7 +367,7 @@ module Submit64
             default_value = field[:default_value].to_s            
           when 'selectString'
             default_value = field[:default_value].to_a
-          when 'selectBelongsTo'
+          when 'selectBelongsTo', 'selectBelongsToThrough'
             association_class = field[:field_association_class]
             custom_select_column = submit64_try_model_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
             if custom_select_column != nil
@@ -399,7 +400,7 @@ module Submit64
             end
             default_value = row[association_class.primary_key]
             field[:field_association_data] = association_data
-          when 'selectHasMany'
+          when 'selectHasMany', 'selectHasManyThrough'
             association_class = field[:field_association_class]
             custom_select_column = submit64_try_model_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
             if custom_select_column != nil
@@ -502,10 +503,10 @@ module Submit64
           return "???"
         end
         if association.macro == :has_many
-          return "selectHasMany"
+          return "selectHasManyThrough"
         end
         if association.macro == :belongs_to
-          return "selectBelongsTo"
+          return "selectBelongsToThrough"
         end
         return "???"
       else
@@ -843,7 +844,7 @@ module Submit64
           end
           if !field[:target].nil?
             association = self.reflect_on_association(field[:target])
-            if self.columns_hash[field[:target].to_s].nil? && (association.nil? || association.options[:polymorphic] == true) # TODO
+            if self.columns_hash[field[:target].to_s].nil? && (association.nil? || association.options[:polymorphic] == true)
               field_index_to_purge << index_field
             end
           else
@@ -876,7 +877,11 @@ module Submit64
             form_rules = self.submit64_get_column_rules(field_map, nil, form_metadata, context[:name])
             form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
             field_association_name = association.name
-            field_association_class =  association.klass
+            if form_field_type == "selectHasManyThrough" || form_field_type == "selectBelongsToThrough"
+              field_association_class =  association.klass.source_reflection.klass
+            else
+              field_association_class =  association.klass
+            end
           end
           {
             field_name: field_name,

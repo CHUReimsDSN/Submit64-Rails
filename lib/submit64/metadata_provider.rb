@@ -157,11 +157,7 @@ module Submit64
         association.options[:polymorphic] != true
       end.map do |association|
         type = submit64_get_form_field_type_by_association(association)
-        if type == "selectHasManyThrough" || type == "selectBelongsToThrough"
-          association_class =  association.source_reflection.klass
-        else
-          association_class =  association.klass
-        end
+        association_class =  association.klass
         {
           name: association.name,
           klass: association_class,
@@ -193,7 +189,7 @@ module Submit64
           builder_rows = builder_rows.and(association_class.instance_exec(nil, &association_scope))
         end 
 
-        if association_found[:type] == 'selectBelongsTo' || association_found[:type] == 'selectBelongsToThrough'
+        if association_found[:type] == 'selectBelongsTo'
           request_params[:resourceData][key] = builder_rows.first           
         else
           request_params[:resourceData][key] = builder_rows
@@ -302,7 +298,7 @@ module Submit64
             builder_rows = builder_rows.and(custom_builder_row_filter)
           end
           case field[:field_type]
-            when "selectBelongsTo", "selectBelongsToThrough"
+            when "selectBelongsTo"
               row = builder_rows.first
               if row.nil?
                 next
@@ -319,7 +315,7 @@ module Submit64
               end
               field[:field_association_data] = association_data
               resource_data_json[field[:field_name]] = row[association_class.primary_key.to_sym]
-            when "selectHasMany", "selectHasManyThrough"
+            when "selectHasMany"
               resource_data_json[field[:field_name]] = []
               association_data = {
                 label: [],
@@ -363,7 +359,7 @@ module Submit64
             default_value = field[:default_value].to_s            
           when 'selectString'
             default_value = field[:default_value].to_a
-          when 'selectBelongsTo', 'selectBelongsToThrough', 'selectHasMany', 'selectHasManyThrough'
+          when 'selectBelongsTo', 'selectHasMany'
             association_class = field[:field_association_class]
             custom_select_column = submit64_try_model_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
             if custom_select_column != nil
@@ -380,7 +376,7 @@ module Submit64
             if association_scope
               builder_rows = builder_rows.and(association_class.instance_exec(nil, &association_scope))
             end 
-            if field[:field_type] == 'selectBelongsTo' || field[:field_type] == 'selectBelongsToThrough'
+            if field[:field_type] == 'selectBelongsTo'
                 row = builder_rows.first
               if row.nil?
                 next
@@ -397,7 +393,7 @@ module Submit64
               end
               default_value = row[association_class.primary_key]
               field[:field_association_data] = association_data
-            elsif field[:field_type] == 'selectHasMany' || field[:field_type] == 'selectHasManyThrough'
+            elsif field[:field_type] == 'selectHasMany'
               rows = builder_rows
               association_data = {
                 label: [],
@@ -480,19 +476,14 @@ module Submit64
         return "selectBelongsTo"
       when "HasManyReflection"
         return "selectHasMany"
+      when "HasOneReflection"
+        return "selectHasOne"
+      when "HasAndBelongsToManyReflection"
+        return "selectHasAndBelongsToMany"
       when "ThroughReflection"
-        if association.source_reflection.nil?
-          return "???"
-        end
-        if association.macro == :has_many
-          return "selectHasManyThrough"
-        end
-        if association.macro == :belongs_to
-          return "selectBelongsToThrough"
-        end
-        return "???"
+        return nil
       else
-        return "???"
+        return nil
       end
     end
 
@@ -859,11 +850,7 @@ module Submit64
             form_rules = self.submit64_get_column_rules(field_map, nil, form_metadata, context[:name])
             form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
             field_association_name = association.name
-            if form_field_type == "selectHasManyThrough" || form_field_type == "selectBelongsToThrough"
-              field_association_class =  association.source_reflection.klass
-            else
-              field_association_class =  association.klass
-            end
+            field_association_class =  association.klass
           end
           {
             field_name: field_name,
@@ -880,6 +867,8 @@ module Submit64
             css_class: field_map[:css_class],
             default_value: field_map[:default_value]
           }
+        end.filter do |field_filter|
+          !field_filter[:field_type].nil?
         end
         {
           fields: fields,
@@ -900,7 +889,7 @@ module Submit64
         resetable: form_metadata[:resetable],
         clearable: form_metadata[:clearable],
         readonly: form_metadata[:readonly],
-      }
+    }
     end
 
     def submit64_valid_attribute?(resource_instance, attr)

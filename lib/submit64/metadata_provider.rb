@@ -286,22 +286,16 @@ module Submit64
           association_class = field[:field_association_class]
           custom_select_column = submit64_try_model_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
           if custom_select_column != nil
-            builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym]).all
+            builder_rows = resource_data.public_send(:field[:field_association_name]).select([*custom_select_column, association_class.primary_key.to_sym]).all
           else
-            builder_rows = association_class.all
+            builder_rows = resource_data.public_send(:field[:field_association_name]).all
           end
           custom_builder_row_filter = submit64_try_model_method_with_args(association_class, :submit64_association_filter_rows, from_class, context)
           if custom_builder_row_filter != nil
             builder_rows = builder_rows.and(custom_builder_row_filter)
           end
-          relation_data =  relations_data[field[:field_name]]
           case field[:field_type]
             when "selectBelongsTo", "selectBelongsToThrough"
-              builder_rows = builder_rows.and(association_class.where({ relation_data.join_primary_key => resource_data[relation_data.join_foreign_key] }))
-              association_scope = relation_data.scope
-              if association_scope
-                builder_rows = builder_rows.and(association_class.instance_exec(resource_data, &association_scope))
-              end
               row = builder_rows.first
               if row.nil?
                 next
@@ -320,11 +314,6 @@ module Submit64
               resource_data_json[field[:field_name]] = row[association_class.primary_key.to_sym]
             when "selectHasMany", "selectHasManyThrough"
               resource_data_json[field[:field_name]] = []
-              builder_rows = builder_rows.and(association_class.where({ relation_data.join_primary_key => resource_data[relation_data.join_foreign_key] }))
-              association_scope = relation_data.scope
-              if association_scope
-                builder_rows = builder_rows.and(association_class.instance_exec(resource_data, &association_scope))
-              end
               association_data = {
                 label: [],
                 data: []

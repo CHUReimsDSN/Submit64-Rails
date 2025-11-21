@@ -878,7 +878,7 @@ module Submit64
             form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
             field_association_name = association.name
             if form_field_type == "selectHasManyThrough" || form_field_type == "selectBelongsToThrough"
-              field_association_class =  association.klass.source_reflection.klass
+              field_association_class =  association.source_reflection.klass
             else
               field_association_class =  association.klass
             end

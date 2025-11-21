@@ -286,9 +286,9 @@ module Submit64
           association_class = field[:field_association_class]
           custom_select_column = submit64_try_model_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
           if custom_select_column != nil
-            builder_rows = resource_data.public_send(:field[:field_association_name]).select([*custom_select_column, association_class.primary_key.to_sym]).all
+            builder_rows = resource_data.public_send(field[:field_association_name]).select([*custom_select_column, association_class.primary_key.to_sym]).all
           else
-            builder_rows = resource_data.public_send(:field[:field_association_name]).all
+            builder_rows = resource_data.public_send(field[:field_association_name]).all
           end
           custom_builder_row_filter = submit64_try_model_method_with_args(association_class, :submit64_association_filter_rows, from_class, context)
           if custom_builder_row_filter != nil

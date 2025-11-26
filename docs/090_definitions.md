@@ -41,11 +41,6 @@ type FormHash = {
   css_class: String = ""
 
   /*
-  * Classe css sur le container du formulaire en mode readonly
-  */
-  css_class_readonly: String = ""
-
-  /*
   * Permet de réinitialiser les valeurs du formulaire côté client
   */
   resetable: Boolean = false
@@ -88,11 +83,6 @@ type SectionHash = {
   css_class: String = ''
 
   /*
-  * Classe css sur le container du formulaire en mode readonly
-  */
-  css_class_readonly: String = ""
-
-  /*
   * Callback qui définit si la section doit être générée ou non
   */
   statement: () -> Boolean = nil
@@ -117,12 +107,12 @@ type FieldHash = {
   hint: String = nil
 
   /*
-  * Indice du champ
+  * Prefix du champ
   */
   prefix: String = nil
 
   /*
-  * Indice du champ
+  * Suffix du champ
   */
   suffix: String = nil
 
@@ -137,12 +127,7 @@ type FieldHash = {
   css_class: String = nil
 
   /*
-  * Classe css sur le container du formulaire en mode readonly
-  */
-  css_class_readonly: String = ""
-
-  /*
-  * Callback qui défini si le champ doit être générée ou non
+  * Callback qui défini si le champ doit être généré (et pris en compte à la soumission) ou non
   */
   statement: () -> Boolean = nil
 

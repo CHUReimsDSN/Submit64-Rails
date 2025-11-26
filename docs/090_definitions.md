@@ -126,9 +126,8 @@ type FieldHash = {
   */
   css_class: String = nil
 
-
   /*
-  * Callback qui défini si le champ doit être générée ou non
+  * Callback qui défini si le champ doit être généré (et pris en compte à la soumission) ou non
   */
   statement: () -> Boolean = nil
 

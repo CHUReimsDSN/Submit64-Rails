@@ -65,7 +65,7 @@ module Submit64
         builder_rows = builder_rows.and(custom_builder_row_filter)
       end
       label_filter = request_params[:labelFilter]
-      if !label_filter.empty?
+      if !label_filter.empty? || label_filter.nil?
         columns_filter = [:label, :id]
         custom_columns_filter = submit64_try_model_method_with_args(association_class, :submit64_association_filter_columns, from_class, context)
         if custom_columns_filter != nil
@@ -841,11 +841,11 @@ module Submit64
             field_index_to_purge << index_field
           end
         end
-        section[:fields] = section[:fields].select.with_index do |_field, index_select|
+        section[:fields] = section[:fields].filter.with_index do |_field, index_select|
           field_index_to_purge.exclude?(index_select)
         end
       end
-      form_metadata[:sections] = form_metadata[:sections].select do |section, index_section|
+      form_metadata[:sections] = form_metadata[:sections].filter.with_index do |section, index_section|
         section_index_to_purge.exclude?(index_section) && section[:fields].count > 0
       end
 

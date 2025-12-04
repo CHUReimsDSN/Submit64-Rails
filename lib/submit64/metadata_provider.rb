@@ -244,10 +244,15 @@ module Submit64
           context: request_params[:context]
         }
         resource_data_renew = submit64_get_form_metadata_and_data(params_for_form)
-        if request_params[:bulkCount] != nil
+        if request_params[:bulkCount] != nil && request_params[:bulkCount].to_i > 1
           bulk_data = [resource_data_renew[:resource_data]]
           request_params[:bulkCount].to_i.times do
-            bulk_data << self.create!(resource_instance)
+            clone = self.new
+            clone.assign_attributes(request_params[:resourceData])
+            clone.save!(validate: false)
+            clone_data = resource_data_renew[:resource_data]
+            clone_data[self.primary_key.to_sym] = clone.call(self.primary_key.to_sym)
+            bulk_data << clone_data
           end
         end
       else

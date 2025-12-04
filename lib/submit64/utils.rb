@@ -29,6 +29,7 @@ module Submit64
       submit64Params: [
         :resourceName,
         :resourceId,
+        :bulkCount,
         resourceData: {},
         context: {}
       ]

@@ -9,6 +9,7 @@ module Submit64
         resetable?: bool,
         clearable?: bool,
         css_class?: String,
+        allow_bulk?: bool,
       }
     type hashSection = {
         fields: Array[hashField],
@@ -20,6 +21,7 @@ module Submit64
     type hashField = {
         field_name: String,
         field_type: String,
+        field_extra_type: String,
         label: String,
         field_association_name?: String,
         field_association_class?: String,

@@ -135,6 +135,9 @@ module Submit64
 
       # Check for not allowed attribute
       form = self.submit64_get_form(context)
+      if (form[:allow_bulk] && request_params[:bulkCount] != nil) || (request_params[:bulkCount] && edit_mode)
+        raise Submit64Exception.new("You are not allowed to submit bulk", 401)
+      end
       flatten_fields = []
       form[:sections].each do |section|
         section[:fields].each do |field|
@@ -229,6 +232,7 @@ module Submit64
         end
       end
 
+      bulk_data = nil
       if skip_validation || is_valid
         # May raise exception from active record callbacks, not Submit64 responsability
         resource_instance.save!(validate: false) # already validated
@@ -240,6 +244,12 @@ module Submit64
           context: request_params[:context]
         }
         resource_data_renew = submit64_get_form_metadata_and_data(params_for_form)
+        if request_params[:bulkCount] != nil
+          bulk_data = [resource_data_renew[:resource_data]]
+          request_params[:bulkCount].to_i.times do
+            bulk_data << self.create!(resource_instance)
+          end
+        end
       else
         error_messages = resource_instance.errors.messages.deep_dup
         resource_data_renew = { 
@@ -252,6 +262,7 @@ module Submit64
         resource_id: resource_id,
         form: resource_data_renew[:form],
         resource_data: resource_data_renew[:resource_data],
+        bulk_data: bulk_data,
         errors: error_messages
       }
     end

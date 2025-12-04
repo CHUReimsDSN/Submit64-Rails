@@ -57,6 +57,7 @@ type FormHash = {
 
   /*
   * Autorise la création de masse
+  * WARNING : La création de masse n'applique les validations que sur le premier enregistrement
   */
   allow_bulk: Boolean = false
 }

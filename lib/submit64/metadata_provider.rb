@@ -135,7 +135,7 @@ module Submit64
 
       # Check for not allowed attribute
       form = self.submit64_get_form(context)
-      if (form[:allow_bulk] && request_params[:bulkCount] != nil) || (request_params[:bulkCount] && edit_mode)
+      if (!form[:allow_bulk] && request_params[:bulkCount] != nil) || (request_params[:bulkCount] && edit_mode)
         raise Submit64Exception.new("You are not allowed to submit bulk", 401)
       end
       flatten_fields = []

@@ -872,7 +872,7 @@ module Submit64
           {
             field_name: field_name,
             field_type: form_field_type,
-            field_extra_type: field_map[:field_extra_type],
+            field_extra_type: field_map[:extra_type],
             label: field_map[:label] || self.submit64_beautify_target(field_map[:target]),
             field_association_name: field_association_name,
             field_association_class: field_association_class,
@@ -906,6 +906,7 @@ module Submit64
         css_class: form_metadata[:css_class],
         resetable: form_metadata[:resetable],
         clearable: form_metadata[:clearable],
+        allow_bulk: form_metadata[:allow_bulk],
         readonly: form_metadata[:readonly],
     }
     end

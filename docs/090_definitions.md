@@ -54,6 +54,11 @@ type FormHash = {
   * Formulaire en lecture seule
   */
   readonly: Boolean = false
+
+  /*
+  * Autorise la création de masse
+  */
+  allow_bulk: Boolean = false
 }
 
 type SectionHash = {
@@ -137,6 +142,11 @@ type FieldHash = {
   * Pour les associations has_many, il faut donner les valeurs des clés primaires du modèle d'association
   */
   default_value: untyped = nil
+
+  /*
+  * Type supplémentaire
+  */
+  extra_type: 'color' | 'wysiwyg'
 }
 ```
 

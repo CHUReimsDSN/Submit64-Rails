@@ -88,6 +88,7 @@ module Submit64
         resourceName: String,
         resourceData: resourceData,
         resourceId?: String | Integer,
+        bulkCount?: Integer,
         context?: context
       }
 
@@ -106,6 +107,7 @@ module Submit64
         resource_id: String | Integer | nil,
         resource_data: resourceData | nil,
         form: hashForm | nil,
+        bulk_data: Array[TResourceData] | nil,
       }
 
 

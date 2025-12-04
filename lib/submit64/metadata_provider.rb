@@ -251,7 +251,7 @@ module Submit64
             clone.assign_attributes(request_params[:resourceData])
             clone.save!(validate: false)
             clone_data = resource_data_renew[:resource_data]
-            clone_data[self.primary_key.to_sym] = clone.method(self.primary_key.to_sym).call
+            clone_data[self.primary_key.to_s] = clone.method(self.primary_key.to_sym).call
             bulk_data << clone_data
           end
         end

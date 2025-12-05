@@ -484,7 +484,7 @@ module Submit64
 
     def submit64_get_form_field_type_by_column_type(column_type, form_select_options)
       if form_select_options.count > 0
-        return "selectString"
+        return "select"
       end
       case column_type.to_s
       when "text"

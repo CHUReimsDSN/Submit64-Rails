@@ -747,10 +747,10 @@ module Submit64
 
       defined_enum = self.defined_enums[column_name.to_s]
       if !defined_enum.nil?
-        return defined_enum.keys.map do |enum_key|
+        return defined_enum.entries.map do |enum_entry|
           {
-            label: enum_key,
-            value: enum_key
+            label: enum_entry[0],
+            value: enum_entry[1]
           }
         end
       end

@@ -391,7 +391,7 @@ module Submit64
           when 'datetime'
             default_value = field[:default_value].to_s            
           when 'selectString'
-            default_value = field[:default_value].to_a
+            default_value = field[:default_value].to_s
           when 'selectBelongsTo', 'selectHasMany', 'selectHasOne', 'selectHasAndBelongsToMany'
             association_class = field[:field_association_class]
             custom_select_column = submit64_try_model_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
@@ -482,7 +482,10 @@ module Submit64
       field_type.to_sym
     end
 
-    def submit64_get_form_field_type_by_column_type(column_type)
+    def submit64_get_form_field_type_by_column_type(column_type, form_select_options)
+      if form_select_options.count > 0
+        return "select"
+      end
       case column_type.to_s
       when "text"
         return "text"
@@ -744,14 +747,13 @@ module Submit64
 
       defined_enum = self.defined_enums[column_name.to_s]
       if !defined_enum.nil?
-        return defined_enum.keys.map do |enum_key_map|
+        return defined_enum.entries.map do |enum_entry_map|
           {
-            label: enum_key_map,
-            value: enum_key_map
+            label: enum_entry_map[0],
+            value: enum_entry_map[1]
           }
         end
       end
-
       []
     end
 
@@ -871,9 +873,9 @@ module Submit64
           association = self.reflect_on_association(field_map[:target])
           if association.nil?
             field_type = self.submit64_get_column_type_by_sgbd_type(columns_hash[field_map[:target].to_s].type)
-            form_field_type = self.submit64_get_form_field_type_by_column_type(field_type)
-            form_rules = self.submit64_get_column_rules(field_map, field_type, form_metadata, context[:name])
             form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
+            form_field_type = self.submit64_get_form_field_type_by_column_type(field_type, form_select_options)
+            form_rules = self.submit64_get_column_rules(field_map, field_type, form_metadata, context[:name])
             field_name = field_map[:target]
             field_association_name = nil
             field_association_class = nil

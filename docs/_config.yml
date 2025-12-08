@@ -24,3 +24,5 @@ callouts:
 aux_links:
   Voir sur Github:
     - https://github.com/CHUReimsDSN/Submit64-Rails
+mermaid:
+  version: "11.12.2"

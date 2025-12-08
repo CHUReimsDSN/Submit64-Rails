@@ -61,4 +61,8 @@ module Submit64
     end
   end
 
+  private_constant :OnMetadataData
+  private_constant :OnAssociationData
+  private_constant :OnSubmitData
+
 end

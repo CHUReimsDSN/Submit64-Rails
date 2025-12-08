@@ -15,7 +15,7 @@ type Context = Hash[String, untyped]
 
 type FormHash = {
 
-  /* 
+  /*
   * Définition des sections
   */
   sections: SectionHash[] = []
@@ -201,6 +201,33 @@ def submit64_association_label: (FromClass?, Context?) -> String
 ```typescript
 type Context = Hash[String, untyped]
 type FromClass = String
+```
+
+<br /><br />
+
+## submit64_lifecycle
+
+```ruby
+def submit64_lifecycle: (Context?) -> LifeCycles
+```
+
+```typescript
+type Context = Hash[String, untyped]
+type LifeCycles = {
+  on_get_metadata_start?: (on_metadata_data, Context) -> nil,
+  on_get_metadata_end?: (on_metadata_data, Context) -> nil,
+
+  on_get_association_start?: (on_association_data, Context) -> nil,
+  on_get_association_end?: (on_association_data, Context) -> nil,
+
+  on_submit_start?: (on_submit_data, Context) -> nil,
+  on_submit_before_validations?: (on_submit_data, Context) -> nil,
+  on_submit_valid_before_save?: (on_submit_data, Context) -> nil,
+  on_submit_success?: (on_submit_data, Context) -> nil,
+  on_bulk_submit_success?: (on_submit_data, Context) -> nil,
+  on_submit_fail?: (on_submit_data, Context) -> nil,
+  on_bulk_submit_fail?: (on_submit_data, Context) -> nil,
+}
 ```
 
 <br /><br />

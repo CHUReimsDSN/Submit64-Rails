@@ -11,6 +11,12 @@ module Submit64
         css_class?: String,
         allow_bulk?: bool,
       }
+    type hashFormInterop = hashForm & {
+        on_submit_success?: (row_data: resourceData, context: context) -> nil,
+        on_bulk_submit_success?: (rows_data: Array[resourceData], context: context) -> nil,
+        on_submit_fail?: (row_data: resourceData, context: context) -> nil,
+        on_bulk_submit_fail?: (rows_data: resourceData, context: context) -> nil,
+    }
     type hashSection = {
         fields: Array[hashField],
         label?: String,
@@ -137,13 +143,13 @@ module Submit64
 
     def submit64_association_default_label: (Class) -> String
 
-    def submit64_try_model_method_with_args: (untyped, Symbol, *untyped) -> untyped
-
-    def submit64_try_row_method_with_args: (untyped, Symbol, *untyped) -> untyped
+    def submit64_try_object_method_with_args: (untyped, Symbol, *untyped) -> untyped
 
     def submit64_get_shallow_form_config: (context) -> shallowForm
 
     def submit64_get_form: (context) -> hashForm
+                         
+    def submit64_get_form_for_interop: (context) -> hashFormInterop
 
     def submit64_valid_attribute?:(instance, Symbol) -> bool
 

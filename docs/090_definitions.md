@@ -205,10 +205,10 @@ type FromClass = String
 
 <br /><br />
 
-## submit64_lifecycle
+## submit64_lifecycle_events
 
 ```ruby
-def submit64_lifecycle: (Context?) -> LifeCycles
+def submit64_lifecycle_events: (Context?) -> LifeCycles
 ```
 
 ```typescript

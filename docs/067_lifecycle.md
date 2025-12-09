@@ -11,7 +11,7 @@ Exemple d'intervention après une soumission de formulaire réussi :
 class MonModele < ApplicationRecord
   extend Submit64::MetadataProvider
 
-  def self.submit64_lifecycle
+  def self.submit64_lifecycle_events
     {
       on_submit_success: () -> { puts "well done" }
     }
@@ -25,7 +25,7 @@ Exemple d'intervention avant une soumission de formulaire valide, avec des argum
 class MonModele < ApplicationRecord
   extend Submit64::MetadataProvider
 
-  def self.submit64_lifecycle
+  def self.submit64_lifecycle_events
     {
       on_submit_valid_before_save: (on_submit_data, context) -> { puts on_submit_data.resource_instance.label }
     }

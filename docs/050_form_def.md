@@ -25,3 +25,8 @@ class MonModele < ActiveRecord::Base
 end
 ```
 <br /><br /> 
+
+
+{: .important }
+Consulter les [Définitions]({% link 090_definitions.md %}) pour connaître les attributs disponibles
+

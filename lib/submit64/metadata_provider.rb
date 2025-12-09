@@ -19,13 +19,21 @@ module Submit64
       else
         context = {}
       end
-      form_metadata = self.submit64_get_form(context)
+      lifecycle_callbacks = submit64_try_object_method_with_args(self, :submit64_lifecycle_events, context) || {}
+      on_metadata_data = OnMetadataData.from
+      submit64_try_lifecycle_callback(lifecycle_callbacks[:on_metadata_start], on_metadata_data, context)
+
+      form_metadata = self.submit64_get_form_for_interop(context)
 
       if !request_params[:resourceId].nil? && request_params[:resourceId] != ""
         resource_data, form_metadata = submit64_get_resource_data(form_metadata, request_params, context)
       else
         resource_data, form_metadata = submit64_get_default_value_data(form_metadata, context)
       end
+
+      on_metadata_data.resync(form: form_metadata, resource_data: resource_data)
+      submit64_try_lifecycle_callback(lifecycle_callbacks[:on_metadata_end], on_metadata_data, context)
+      
       {
         form: form_metadata,
         resource_data: resource_data
@@ -42,6 +50,7 @@ module Submit64
       else
         context = {}
       end
+      lifecycle_callbacks = submit64_try_object_method_with_args(self, :submit64_lifecycle_events, context) || {}
       association = self.reflect_on_association(request_params[:associationName])
       if association.nil?
         raise Submit64Exception.new("Association not found : #{request_params[:associationName]}", 400)
@@ -54,20 +63,23 @@ module Submit64
         limit = default_limit
       end
       offset = request_params[:offset] || 0
-      custom_select_column = submit64_try_model_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
+      on_association_data = OnAssociationData.from(limit, offset, from_class, association_class)
+      submit64_try_lifecycle_callback(lifecycle_callbacks[:on_get_association_start], on_association_data, context)
+
+      custom_select_column = submit64_try_object_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
       if custom_select_column != nil
         builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym]).all
       else
         builder_rows = association_class.all
       end
-      custom_builder_row_filter = submit64_try_model_method_with_args(association_class, :submit64_association_filter_rows, from_class, context)
+      custom_builder_row_filter = submit64_try_object_method_with_args(association_class, :submit64_association_filter_rows, from_class, context)
       if custom_builder_row_filter != nil
         builder_rows = builder_rows.and(custom_builder_row_filter)
       end
       label_filter = request_params[:labelFilter]
       if !label_filter.empty? || label_filter.nil?
         columns_filter = [:label, :id]
-        custom_columns_filter = submit64_try_model_method_with_args(association_class, :submit64_association_filter_columns, from_class, context)
+        custom_columns_filter = submit64_try_object_method_with_args(association_class, :submit64_association_filter_columns, from_class, context)
         if custom_columns_filter != nil
           columns_filter = custom_columns_filter
         end
@@ -94,7 +106,7 @@ module Submit64
       builder_row_count = builder_rows.reselect(association_class.primary_key.to_sym).count
       builder_rows = builder_rows.limit(limit).offset(offset).map do |row|
         label = ""
-        custom_label = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)
+        custom_label = submit64_try_object_method_with_args(row, :submit64_association_label, from_class, context)
         if custom_label != nil
           label = custom_label
         else
@@ -106,7 +118,8 @@ module Submit64
           data: row
         }
       end
-
+      on_association_data.resync(rows: builder_rows, row_count: builder_row_count)
+      submit64_try_lifecycle_callback(lifecycle_callbacks[:on_get_association_end], on_association_data, context)
       {
         rows: builder_rows,
         row_count: builder_row_count
@@ -123,6 +136,7 @@ module Submit64
       else
         context = {}
       end
+      lifecycle_callbacks = submit64_try_object_method_with_args(self, :submit64_lifecycle_events, context) || {}
       edit_mode = !request_params[:resourceId].nil? && request_params[:resourceId] != ""
       if !edit_mode
         resource_instance = self.new
@@ -132,12 +146,26 @@ module Submit64
           raise Submit64Exception.new("Resource #{request_params[:resourceName]} with primary key '#{request_params[:resourceId]}' does not exist", 404)
         end
       end
-
-      # Check for not allowed attribute
+      bulk_mode = request_params[:bulkCount] != nil && request_params[:bulkCount].to_i > 0
       form = self.submit64_get_form(context)
-      if (!form[:allow_bulk] && request_params[:bulkCount] != nil) || (request_params[:bulkCount] && edit_mode)
+      if (!form[:allow_bulk] && bulk_mode) || (bulk_mode && edit_mode)
         raise Submit64Exception.new("You are not allowed to submit bulk", 401)
       end
+
+      unlink_fields = {}
+      form[:sections].each do |section|
+        section[:fields].each_with_index do |field, field_index|
+          if field[:unlinked] == true
+            unlink_fields[field[:field_name].to_sym] = request_params[:resourceData][field[:field_name].to_s]
+            request_params[:resourceData].delete(field[:field_name].to_s)
+          end
+        end
+      end
+
+      on_submit_data = OnSubmitData.from(resource_instance, edit_mode, bulk_mode, request_params, form, unlink_fields)
+      submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_start], on_submit_data, context)
+
+      # Check for not allowed attribute
       flatten_fields = []
       form[:sections].each do |section|
         section[:fields].each do |field|
@@ -150,10 +178,9 @@ module Submit64
         end
       end
 
-      skip_validation = form[:use_model_validations] == false
       success = false
       error_messages = {}
-      resource_id = resource_instance.id || nil     
+      resource_id = resource_instance.id || nil
 
       # Compute row ids from association to instance
       all_associations = self.reflect_on_all_associations.filter do |association|
@@ -176,13 +203,13 @@ module Submit64
         end
         association_class = association_found[:klass]
         from_class = self.to_s
-        custom_select_column = submit64_try_model_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
+        custom_select_column = submit64_try_object_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
         if custom_select_column != nil
           builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym]).all
         else
           builder_rows = association_class.all
         end
-        custom_builder_row_filter = submit64_try_model_method_with_args(association_class, :submit64_association_filter_rows, from_class, context)
+        custom_builder_row_filter = submit64_try_object_method_with_args(association_class, :submit64_association_filter_rows, from_class, context)
         if custom_builder_row_filter != nil
           builder_rows = builder_rows.and(custom_builder_row_filter)
         end
@@ -199,28 +226,30 @@ module Submit64
         end
       end
 
+      
       # Validate each attributs
+      skip_validation = form[:skip_validation] == true
+      on_submit_data.resync(skip_validation: skip_validation, error_messages: error_messages, resource_id: resource_id, request_params: request_params)
+      submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_before_validations], on_submit_data, context)
       is_valid = true
-      if !skip_validation
-        begin
-          resource_instance.assign_attributes(request_params[:resourceData])
-        rescue => exception
-          if exception.class == ActiveRecord::RecordNotSaved
-            if exception.message.include? "because one or more of the new records could not be saved"
-              error_messages["backend"] = ["Association impossible car un/une des '#{exception.message.split("replace").second.split(" ").first}' n'est pas valide'"]
-              return {
-                success: false,
-                resource_id: resource_id,
-                errors: error_messages
-              }
-            end
+      begin
+        resource_instance.assign_attributes(request_params[:resourceData])
+      rescue => exception
+        if exception.class == ActiveRecord::RecordNotSaved
+          if exception.message.include? "because one or more of the new records could not be saved"
+            error_messages["backend"] = ["Association impossible car un/une des '#{exception.message.split("replace").second.split(" ").first}' n'est pas valide'"]
+            return {
+              success: false,
+              resource_id: resource_id,
+              errors: error_messages
+            }
           end
         end
-        request_params[:resourceData].keys.each do |resource_key|
-          if !submit64_valid_attribute?(resource_instance, resource_key)
-            is_valid = false
-            break
-          end
+      end
+      request_params[:resourceData].keys.each do |resource_key|
+        if !submit64_valid_attribute?(resource_instance, resource_key)
+          is_valid = false
+          break
         end
       end
 
@@ -232,8 +261,12 @@ module Submit64
         end
       end
 
+
       bulk_data = nil
       if skip_validation || is_valid
+        on_submit_data.resync(is_valid: is_valid, resource_instance: resource_instance, error_messages: error_messages)
+        submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_valid_before_save], on_submit_data, context)
+
         # May raise exception from active record callbacks, not Submit64 responsability
         resource_instance.save!(validate: false) # already validated
         success = true
@@ -244,9 +277,10 @@ module Submit64
           context: request_params[:context]
         }
         resource_data_renew = submit64_get_form_metadata_and_data(params_for_form)
+        form = resource_data_renew[:form]
         if request_params[:bulkCount] != nil && request_params[:bulkCount].to_i > 1
           bulk_data = [resource_data_renew[:resource_data]]
-          request_params[:bulkCount].to_i.times do
+          (request_params[:bulkCount].to_i - 1).times do
             clone = self.new
             clone.assign_attributes(request_params[:resourceData])
             clone.save!(validate: false)
@@ -254,6 +288,13 @@ module Submit64
             clone_data[self.primary_key.to_s] = clone.method(self.primary_key.to_sym).call
             bulk_data << clone_data
           end
+          bulk_data = bulk_data
+        end
+        on_submit_data.resync(success: success, resource_id: resource_id, resource_instance: resource_instance, bulk_data: bulk_data, form: form)
+        if bulk_mode
+          submit64_try_lifecycle_callback(lifecycle_callbacks[:on_bulk_submit_success], on_submit_data, context)
+        else
+          submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_success], on_submit_data, context)
         end
       else
         error_messages = resource_instance.errors.messages.deep_dup
@@ -261,11 +302,17 @@ module Submit64
           form: nil,
           resource_data: nil
         }
+        on_submit_data.resync(success: success, error_messages: error_messages)
+        if bulk_mode
+          submit64_try_lifecycle_callback(lifecycle_callbacks[:on_bulk_submit_fail], on_submit_data, context)
+        else
+          submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_fail], on_submit_data, context)
+        end
       end
       {
         success: success,
         resource_id: resource_id,
-        form: resource_data_renew[:form],
+        form: form,
         resource_data: resource_data_renew[:resource_data],
         bulk_data: bulk_data,
         errors: error_messages
@@ -279,6 +326,9 @@ module Submit64
       relations_data = {}
       form_metadata[:sections].each do |section|
         section[:fields].each do |field|
+          if field[:unlinked]
+            next
+          end
           field.delete(:default_value)
           if field[:field_association_name] == nil
             columns_to_select << field[:field_name]
@@ -308,8 +358,8 @@ module Submit64
           end
           association_class = field[:field_association_class]
           relation = self.reflect_on_association(field[:field_association_name])
-          custom_select_column = submit64_try_model_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
-          custom_builder_row_filter = submit64_try_model_method_with_args(association_class, :submit64_association_filter_rows, from_class, context)
+          custom_select_column = submit64_try_object_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
+          custom_builder_row_filter = submit64_try_object_method_with_args(association_class, :submit64_association_filter_rows, from_class, context)
           case field[:field_type]
             when "selectBelongsTo", "selectHasOne"
               if custom_select_column != nil
@@ -332,7 +382,7 @@ module Submit64
                 label: [],
                 data: [row]
               }
-              custom_display_value = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)
+              custom_display_value = submit64_try_object_method_with_args(row, :submit64_association_label, from_class, context)
               if custom_display_value != nil
                 association_data[:label] << custom_display_value
               else
@@ -355,7 +405,7 @@ module Submit64
                 data: []
               }
               builder_rows.each do |row|
-                custom_display_value = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)
+                custom_display_value = submit64_try_object_method_with_args(row, :submit64_association_label, from_class, context)
                 if custom_display_value != nil
                   association_data[:label] << custom_display_value
                 else
@@ -394,13 +444,13 @@ module Submit64
             default_value = field[:default_value].to_s
           when 'selectBelongsTo', 'selectHasMany', 'selectHasOne', 'selectHasAndBelongsToMany'
             association_class = field[:field_association_class]
-            custom_select_column = submit64_try_model_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
+            custom_select_column = submit64_try_object_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
             if custom_select_column != nil
               builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym]).all
             else
               builder_rows = association_class.all
             end
-            custom_builder_row_filter = submit64_try_model_method_with_args(association_class, :submit64_association_filter_rows, from_class, context)
+            custom_builder_row_filter = submit64_try_object_method_with_args(association_class, :submit64_association_filter_rows, from_class, context)
             if custom_builder_row_filter != nil
               builder_rows = builder_rows.and(custom_builder_row_filter)
             end
@@ -418,7 +468,7 @@ module Submit64
                 label: [],
                 data: [row]
               }
-              custom_display_value = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)
+              custom_display_value = submit64_try_object_method_with_args(row, :submit64_association_label, from_class, context)
               if custom_display_value != nil
                 association_data[:label] << custom_display_value
               else
@@ -434,7 +484,7 @@ module Submit64
               }
               default_value = []
               rows.each do |row|
-                custom_display_value = submit64_try_row_method_with_args(row, :submit64_association_label, from_class, context)
+                custom_display_value = submit64_try_object_method_with_args(row, :submit64_association_label, from_class, context)
                 if custom_display_value != nil
                   association_data[:label] << custom_display_value
                 else
@@ -731,7 +781,7 @@ module Submit64
       rules
     end
 
-    def submit64_get_column_select_options(field_def, column_name)
+    def submit64_get_column_select_options(field_def, column_name = nil)
       if !field_def[:select_options].nil? && !field_def[:select_options].empty?
         if field_def[:select_options].first.class == 'string'
           return field_def[:select_options].map do |select_option_map|
@@ -745,13 +795,15 @@ module Submit64
         end
       end
 
-      defined_enum = self.defined_enums[column_name.to_s]
-      if !defined_enum.nil?
-        return defined_enum.entries.map do |enum_entry|
-          {
-            label: enum_entry[0],
-            value: enum_entry[1]
-          }
+      if !column_name.nil?
+        defined_enum = self.defined_enums[column_name.to_s]
+        if !defined_enum.nil?
+          return defined_enum.entries.map do |enum_entry|
+            {
+              label: enum_entry[0],
+              value: enum_entry[1]
+            }
+          end
         end
       end
       []
@@ -771,17 +823,9 @@ module Submit64
       row.method(self.primary_key.to_sym).call.to_s
     end
 
-    def submit64_try_model_method_with_args(class_model, method_name, *args)
-      if class_model.respond_to?(method_name, true)
-        method_found = class_model.method(method_name)
-        return submit64_try_method_with_args(method_found, *args)
-      end
-      nil
-    end
-
-    def submit64_try_row_method_with_args(row, method_name, *args)
-      if row.respond_to?(method_name, true)
-        method_found = row.method(method_name)
+    def submit64_try_object_method_with_args(object, method_name, *args)
+      if object.respond_to?(method_name, true)
+        method_found = object.method(method_name)
         return submit64_try_method_with_args(method_found, *args)
       end
       nil
@@ -811,7 +855,7 @@ module Submit64
     def submit64_get_form(context)
       # First structuration
       default_form_metadata = self.submit64_get_default_form
-      form_metadata = submit64_try_model_method_with_args(self, :submit64_form_builder, context)
+      form_metadata = submit64_try_object_method_with_args(self, :submit64_form_builder, context)
       if form_metadata.nil?
         form_metadata = default_form_metadata
       else
@@ -856,7 +900,9 @@ module Submit64
               field_index_to_purge << index_field
             end
           else
-            field_index_to_purge << index_field
+            if field[:unlink_target].nil?
+              field_index_to_purge << index_field
+            end
           end
         end
         section[:fields] = section[:fields].filter.with_index do |_field, index_select|
@@ -870,28 +916,42 @@ module Submit64
       # Projection
       form_metadata[:sections] = form_metadata[:sections].map do |section_map|
         fields = section_map[:fields].map do |field_map|
-          association = self.reflect_on_association(field_map[:target])
-          if association.nil?
-            field_type = self.submit64_get_column_type_by_sgbd_type(columns_hash[field_map[:target].to_s].type)
-            form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
-            form_field_type = self.submit64_get_form_field_type_by_column_type(field_type, form_select_options)
-            form_rules = self.submit64_get_column_rules(field_map, field_type, form_metadata, context[:name])
-            field_name = field_map[:target]
+          if field_map[:unlink_target]
+            form_select_options = self.submit64_get_column_select_options(field_map) # TODO test si enum possible sans column
+            form_field_type = field_map[:unlink_type] || 'string'
+            form_rules = [] # TODO
+            field_name = field_map[:unlink_target]
+            label = field_map[:label] || self.submit64_beautify_target(field_map[:unlink_target])
             field_association_name = nil
             field_association_class = nil
+            unlinked = true
           else
-            field_name = field_map[:target]
-            form_field_type = self.submit64_get_form_field_type_by_association(association)
-            form_rules = self.submit64_get_column_rules(field_map, nil, form_metadata, context[:name])
-            form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
-            field_association_name = association.name
-            field_association_class =  association.klass
+            unlinked = false
+            association = self.reflect_on_association(field_map[:target])
+            if association.nil?
+              field_type = self.submit64_get_column_type_by_sgbd_type(columns_hash[field_map[:target].to_s].type)
+              form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
+              form_field_type = self.submit64_get_form_field_type_by_column_type(field_type, form_select_options)
+              form_rules = self.submit64_get_column_rules(field_map, field_type, form_metadata, context[:name])
+              field_name = field_map[:target]
+              label = field_map[:label] || self.submit64_beautify_target(field_map[:target])
+              field_association_name = nil
+              field_association_class = nil
+            else
+              field_name = field_map[:target]
+              form_field_type = self.submit64_get_form_field_type_by_association(association)
+              form_rules = self.submit64_get_column_rules(field_map, nil, form_metadata, context[:name])
+              form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
+              field_association_name = association.name
+              field_association_class =  association.klass
+              label = field_map[:label] || self.submit64_beautify_target(field_map[:target])
+            end
           end
           {
             field_name: field_name,
             field_type: form_field_type,
             field_extra_type: field_map[:extra_type],
-            label: field_map[:label] || self.submit64_beautify_target(field_map[:target]),
+            label: label,
             field_association_name: field_association_name,
             field_association_class: field_association_class,
             hint: field_map[:hint],
@@ -902,6 +962,7 @@ module Submit64
             static_select_options: form_select_options,
             css_class: field_map[:css_class],
             default_value: field_map[:default_value],
+            unlinked: unlinked
           }
         end.filter do |field_filter|
           !field_filter[:field_type].nil?
@@ -929,12 +990,27 @@ module Submit64
     }
     end
 
+    def submit64_get_form_for_interop(context)
+      form = submit64_get_form(context)
+      [].each do |key_to_exclude|
+        form.delete key_to_exclude
+      end
+      form
+    end
+
     def submit64_valid_attribute?(resource_instance, attr)
       resource_instance.errors.delete(attr)
       resource_instance.class.validators_on(attr).map do |v|
         v.validate_each(resource_instance, attr, resource_instance.method(attr.to_sym).call)
       end
       resource_instance.errors[attr].blank?
+    end
+
+    def submit64_try_lifecycle_callback(proc, *args)
+      if proc.nil? || proc.class != Proc
+        return nil
+      end
+      submit64_try_method_with_args(proc, *args)
     end
 
   end

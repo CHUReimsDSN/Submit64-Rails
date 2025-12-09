@@ -911,15 +911,17 @@ module Submit64
               form_field_type = field_map[:unlink_type]
               form_rules = [] # TODO
               field_name = field_map[:unlink_target]
+              label = field_map[:label] || self.submit64_beautify_target(field_map[:unlink_target])
             else
               field_type = self.submit64_get_column_type_by_sgbd_type(columns_hash[field_map[:target].to_s].type)
               form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
               form_field_type = self.submit64_get_form_field_type_by_column_type(field_type, form_select_options)
               form_rules = self.submit64_get_column_rules(field_map, field_type, form_metadata, context[:name])
               field_name = field_map[:target]
+              label = field_map[:label] || self.submit64_beautify_target(field_map[:target])
             end
-              field_association_name = nil
-              field_association_class = nil
+            field_association_name = nil
+            field_association_class = nil
           else
             field_name = field_map[:target]
             form_field_type = self.submit64_get_form_field_type_by_association(association)
@@ -927,12 +929,13 @@ module Submit64
             form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
             field_association_name = association.name
             field_association_class =  association.klass
+            label = field_map[:label] || self.submit64_beautify_target(field_map[:target])
           end
           {
             field_name: field_name,
             field_type: form_field_type,
             field_extra_type: field_map[:extra_type],
-            label: field_map[:label] || self.submit64_beautify_target(field_map[:target]),
+            label: label,
             field_association_name: field_association_name,
             field_association_class: field_association_class,
             hint: field_map[:hint],

@@ -117,9 +117,9 @@ module Submit64
           value: row[self.primary_key.to_sym],
           data: row
         }
+      end
       on_association_data.resync(rows: builder_rows, row_count: builder_row_count)
       submit64_try_lifecycle_callback(lifecycle_callbacks[:on_get_association_end], on_association_data, context)
-      end
       {
         rows: builder_rows,
         row_count: builder_row_count

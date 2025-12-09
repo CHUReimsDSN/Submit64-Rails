@@ -148,6 +148,28 @@ type FieldHash = {
   * Type supplémentaire
   */
   extra_type: 'color' | 'wysiwyg'
+
+  /*
+  * Délie le champ du modèle
+  */
+  unlink: Boolean = nil
+
+  /*
+  * Type du champ
+  * Nécessite l'attribut unlink à true
+  */
+  unlink_type: "string"
+              | "text"
+              | "date"
+              | "datetime"
+              | "select"
+              | "selectBelongsTo"
+              | "selectHasMany"
+              | "selectHasOne"
+              | "selectHasAndBelongsToMany"
+              | "checkbox"
+              | "number"
+              | "object" = "string"
 }
 ```
 

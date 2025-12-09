@@ -221,26 +221,24 @@ module Submit64
       on_submit_data.resync(skip_validation: skip_validation, error_messages: error_messages, resource_id: resource_id, request_params: request_params)
       submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_before_validations], on_submit_data, context)
       is_valid = true
-      if skip_validation
-        begin
-          resource_instance.assign_attributes(request_params[:resourceData])
-        rescue => exception
-          if exception.class == ActiveRecord::RecordNotSaved
-            if exception.message.include? "because one or more of the new records could not be saved"
-              error_messages["backend"] = ["Association impossible car un/une des '#{exception.message.split("replace").second.split(" ").first}' n'est pas valide'"]
-              return {
-                success: false,
-                resource_id: resource_id,
-                errors: error_messages
-              }
-            end
+      begin
+        resource_instance.assign_attributes(request_params[:resourceData])
+      rescue => exception
+        if exception.class == ActiveRecord::RecordNotSaved
+          if exception.message.include? "because one or more of the new records could not be saved"
+            error_messages["backend"] = ["Association impossible car un/une des '#{exception.message.split("replace").second.split(" ").first}' n'est pas valide'"]
+            return {
+              success: false,
+              resource_id: resource_id,
+              errors: error_messages
+            }
           end
         end
-        request_params[:resourceData].keys.each do |resource_key|
-          if !submit64_valid_attribute?(resource_instance, resource_key)
-            is_valid = false
-            break
-          end
+      end
+      request_params[:resourceData].keys.each do |resource_key|
+        if !submit64_valid_attribute?(resource_instance, resource_key)
+          is_valid = false
+          break
         end
       end
 

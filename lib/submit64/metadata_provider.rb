@@ -769,7 +769,7 @@ module Submit64
       rules
     end
 
-    def submit64_get_column_select_options(field_def, column_name)
+    def submit64_get_column_select_options(field_def, column_name = nil)
       if !field_def[:select_options].nil? && !field_def[:select_options].empty?
         if field_def[:select_options].first.class == 'string'
           return field_def[:select_options].map do |select_option_map|
@@ -783,13 +783,15 @@ module Submit64
         end
       end
 
-      defined_enum = self.defined_enums[column_name.to_s]
-      if !defined_enum.nil?
-        return defined_enum.entries.map do |enum_entry|
-          {
-            label: enum_entry[0],
-            value: enum_entry[1]
-          }
+      if !column_name.nil?
+        defined_enum = self.defined_enums[column_name.to_s]
+        if !defined_enum.nil?
+          return defined_enum.entries.map do |enum_entry|
+            {
+              label: enum_entry[0],
+              value: enum_entry[1]
+            }
+          end
         end
       end
       []
@@ -886,7 +888,7 @@ module Submit64
               field_index_to_purge << index_field
             end
           else
-            if field[:unlink].nil? || field[:unlink] != true
+            if field[:unlink_target].nil?
               field_index_to_purge << index_field
             end
           end
@@ -904,13 +906,20 @@ module Submit64
         fields = section_map[:fields].map do |field_map|
           association = self.reflect_on_association(field_map[:target])
           if association.nil?
-            field_type = self.submit64_get_column_type_by_sgbd_type(columns_hash[field_map[:target].to_s].type)
-            form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
-            form_field_type = self.submit64_get_form_field_type_by_column_type(field_type, form_select_options)
-            form_rules = self.submit64_get_column_rules(field_map, field_type, form_metadata, context[:name])
-            field_name = field_map[:target]
-            field_association_name = nil
-            field_association_class = nil
+            if field_map[:unlink_target]
+              form_select_options = self.submit64_get_column_select_options(field_map) # TODO test si enum possible sans column
+              form_field_type = field_map[:unlink_type]
+              form_rules = [] # TODO
+              field_name = field_map[:unlink_target]
+            else
+              field_type = self.submit64_get_column_type_by_sgbd_type(columns_hash[field_map[:target].to_s].type)
+              form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
+              form_field_type = self.submit64_get_form_field_type_by_column_type(field_type, form_select_options)
+              form_rules = self.submit64_get_column_rules(field_map, field_type, form_metadata, context[:name])
+              field_name = field_map[:target]
+            end
+              field_association_name = nil
+              field_association_class = nil
           else
             field_name = field_map[:target]
             form_field_type = self.submit64_get_form_field_type_by_association(association)

@@ -150,12 +150,12 @@ type FieldHash = {
   extra_type: 'color' | 'wysiwyg'
 
   /*
-  * Délie le champ du modèle
+  * Cible arbitraire délié du model
   */
-  unlink: Boolean = nil
+  unlink_target: Symbol
 
   /*
-  * Type du champ
+  * Type du champ délié
   * Nécessite l'attribut unlink à true
   */
   unlink_type: "string"

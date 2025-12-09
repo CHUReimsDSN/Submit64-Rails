@@ -153,11 +153,11 @@ module Submit64
       end
 
       unlink_fields = {}
-      form[:sections].deep_dup.each do |section|
+      form[:sections].each do |section|
         section[:fields].each_with_index do |field, field_index|
           if field[:unlinked] == true
             unlink_fields[field[:field_name].to_sym] = request_params[:resourceData][field[:field_name].to_s]
-            request_params[:resourceData].delete([field[:field_name].to_s])
+            request_params[:resourceData].delete(field[:field_name].to_s)
           end
         end
       end

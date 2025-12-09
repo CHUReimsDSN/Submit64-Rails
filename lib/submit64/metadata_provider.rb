@@ -152,14 +152,15 @@ module Submit64
         raise Submit64Exception.new("You are not allowed to submit bulk", 401)
       end
 
-      all_linked_field_names = form[:sections].reduce([]) do |acc, section|
-        acc << section[:fields].filter do |field|
-          field[:unlinked] == true
-        end.map do |field|
-          field[:field_name].to_sym
+      unlink_fields = {}
+      form[:sections].deep_dup.each do |section|
+        section[:fields].each_with_index do |field, field_index|
+          if field[:unlinked] == true
+            unlink_fields[field[:field_name].to_sym] = request_params[:resourceData][field[:field_name].to_s]
+            request_params[:resourceData].delete([field[:field_name].to_s])
+          end
         end
       end
-      unlink_fields = request_params[:resourceData].slice(all_linked_field_names.flatten)
 
       on_submit_data = OnSubmitData.from(resource_instance, edit_mode, bulk_mode, request_params, form, unlink_fields)
       submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_start], on_submit_data, context)

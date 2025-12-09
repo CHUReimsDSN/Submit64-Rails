@@ -904,7 +904,7 @@ module Submit64
         fields = section_map[:fields].map do |field_map|
           if field_map[:unlink_target]
             form_select_options = self.submit64_get_column_select_options(field_map) # TODO test si enum possible sans column
-            form_field_type = field_map[:unlink_type]
+            form_field_type = field_map[:unlink_type] || 'string'
             form_rules = [] # TODO
             field_name = field_map[:unlink_target]
             label = field_map[:label] || self.submit64_beautify_target(field_map[:unlink_target])
@@ -975,7 +975,7 @@ module Submit64
 
     def submit64_get_form_for_interop(context)
       form = submit64_get_form(context)
-      [:on_submit_success, :on_bulk_submit_success, :on_submit_fail, :on_bulk_submit_fail].each do |key_to_exclude|
+      [].each do |key_to_exclude|
         form.delete key_to_exclude
       end
       form

@@ -159,7 +159,7 @@ module Submit64
           field[:field_name].to_sym
         end
       end
-      unlink_fields = request_params[:resourceData].slice(all_linked_field_names.flat)
+      unlink_fields = request_params[:resourceData].slice(all_linked_field_names.flatten)
 
       on_submit_data = OnSubmitData.from(resource_instance, edit_mode, bulk_mode, request_params, form, unlink_fields)
       submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_start], on_submit_data, context)

@@ -5,6 +5,10 @@ require_relative "submit64/parameters"
 require_relative "submit64/submit64_exception"
 require_relative "submit64/utils"
 require_relative "submit64/version"
+require_relative "submit64/lifecycle_data"
+require_relative "submit64/on_metadata_data"
+require_relative "submit64/on_association_data"
+require_relative "submit64/on_submit_data"
 
 module Submit64
 
@@ -61,6 +65,7 @@ module Submit64
     end
   end
 
+  private_constant :LifecycleData
   private_constant :OnMetadataData
   private_constant :OnAssociationData
   private_constant :OnSubmitData

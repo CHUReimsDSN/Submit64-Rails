@@ -956,10 +956,6 @@ module Submit64
         clearable: form_metadata[:clearable],
         allow_bulk: form_metadata[:allow_bulk],
         readonly: form_metadata[:readonly],
-        on_submit_success: form_metadata[:on_submit_success],
-        on_bulk_submit_success: form_metadata[:on_bulk_submit_success],
-        on_submit_fail: form_metadata[:on_submon_submit_failit_success],
-        on_bulk_submit_fail: form_metadata[:on_bulk_submit_fail],
     }
     end
 

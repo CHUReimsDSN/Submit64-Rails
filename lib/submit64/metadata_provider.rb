@@ -13,13 +13,13 @@ module Submit64
       unless self < ActiveRecord::Base
         raise Submit64Exception.new("Method must be called from ActiveRecord::Base inherited class", 400)
       end
-      lifecycle_callbacks = submit64_try_object_method_with_args(self, :submit64_lifecycle, context)
       context = request_params[:context]
       if context != nil
         context = context.to_h
       else
         context = {}
       end
+      lifecycle_callbacks = submit64_try_object_method_with_args(self, :submit64_lifecycle, context)
       on_metadata_data = OnMetadataData.from
       submit64_try_lifecycle_callback(lifecycle_callbacks[:on_metadata_start], on_metadata_data, context)
 
@@ -44,13 +44,13 @@ module Submit64
       unless self < ActiveRecord::Base
         raise Submit64Exception.new("Method must be called from ActiveRecord::Base inherited class", 400)
       end
-      lifecycle_callbacks = submit64_try_object_method_with_args(self, :submit64_lifecycle, context)
       context = request_params[:context]
       if context != nil
         context = context.to_h
       else
         context = {}
       end
+      lifecycle_callbacks = submit64_try_object_method_with_args(self, :submit64_lifecycle, context)
       association = self.reflect_on_association(request_params[:associationName])
       if association.nil?
         raise Submit64Exception.new("Association not found : #{request_params[:associationName]}", 400)
@@ -131,12 +131,12 @@ module Submit64
         raise Submit64Exception.new("Method must be called from ActiveRecord::Base inherited class", 400)
       end
       context = request_params[:context]
-      lifecycle_callbacks = submit64_try_object_method_with_args(self, :submit64_lifecycle, context)
       if context != nil
         context = context.to_h
       else
         context = {}
       end
+      lifecycle_callbacks = submit64_try_object_method_with_args(self, :submit64_lifecycle, context)
       edit_mode = !request_params[:resourceId].nil? && request_params[:resourceId] != ""
       if !edit_mode
         resource_instance = self.new

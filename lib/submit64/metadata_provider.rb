@@ -151,7 +151,9 @@ module Submit64
       if (!form[:allow_bulk] && bulk_mode) || (bulk_mode && edit_mode)
         raise Submit64Exception.new("You are not allowed to submit bulk", 401)
       end
-      on_submit_data = OnSubmitData.from(resource_instance, edit_mode, bulk_mode, request_params, form)
+      unlink_fields = {}
+      # request_params[]
+      on_submit_data = OnSubmitData.from(resource_instance, edit_mode, bulk_mode, request_params, form, unlink_fields)
       submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_start], on_submit_data, context)
 
       # Check for not allowed attribute

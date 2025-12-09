@@ -152,7 +152,7 @@ module Submit64
         raise Submit64Exception.new("You are not allowed to submit bulk", 401)
       end
       unlink_fields = {}
-      # request_params[]
+      # request_params[] # TOOD
       on_submit_data = OnSubmitData.from(resource_instance, edit_mode, bulk_mode, request_params, form, unlink_fields)
       submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_start], on_submit_data, context)
 
@@ -317,6 +317,9 @@ module Submit64
       relations_data = {}
       form_metadata[:sections].each do |section|
         section[:fields].each do |field|
+          if field[:unlinked]
+            next
+          end
           field.delete(:default_value)
           if field[:field_association_name] == nil
             columns_to_select << field[:field_name]
@@ -912,7 +915,9 @@ module Submit64
             label = field_map[:label] || self.submit64_beautify_target(field_map[:unlink_target])
             field_association_name = nil
             field_association_class = nil
+            unlinked = true
           else
+            unlinked = false
             association = self.reflect_on_association(field_map[:target])
             if association.nil?
               field_type = self.submit64_get_column_type_by_sgbd_type(columns_hash[field_map[:target].to_s].type)
@@ -948,6 +953,7 @@ module Submit64
             static_select_options: form_select_options,
             css_class: field_map[:css_class],
             default_value: field_map[:default_value],
+            unlinked: unlinked
           }
         end.filter do |field_filter|
           !field_filter[:field_type].nil?

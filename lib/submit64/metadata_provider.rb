@@ -355,7 +355,6 @@ module Submit64
       resource_data = resource_instance.slice(columns_to_select)
       resource_data_json = resource_data.as_json
 
-      resource_data_json.merge(unlink_default_values)
       form_metadata[:sections].each do |section|
         section[:fields].each do |field|
           if (field[:field_association_name] == nil)
@@ -423,6 +422,9 @@ module Submit64
           end
 
         end
+      end
+      unlink_default_values.each do |key, value|
+        resource_data_json[key.to_s] = value
       end
 
       [resource_data_json, form_metadata]

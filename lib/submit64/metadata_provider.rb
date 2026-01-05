@@ -23,10 +23,17 @@ module Submit64
       on_metadata_data = OnMetadataData.from
       submit64_try_lifecycle_callback(lifecycle_callbacks[:on_metadata_start], on_metadata_data, context)
 
-      form_metadata = self.submit64_get_form_for_interop(context)
+      resource_instance = self.all
+                          .where({ self.primary_key.to_sym => request_params[:resourceId] })
+                          .first
+      form_metadata = self.submit64_get_form_for_interop(resource_instance, context)
 
-      if !request_params[:resourceId].nil? && request_params[:resourceId] != ""
-        resource_data, form_metadata = submit64_get_resource_data(form_metadata, request_params, context)
+      if resource_instance.nil? && request_params[:resourceId] != nil
+        raise Submit64Exception.new("Resource #{request_params[:resou0rceName]} with primary key '#{request_params[:resourceId]}' does not exist", 404)
+      end
+
+      if !resource_instance.nil?
+        resource_data, form_metadata = submit64_get_resource_data(resource_instance, form_metadata, request_params, context)
       else
         resource_data, form_metadata = submit64_get_default_value_data(form_metadata, context)
       end
@@ -147,7 +154,7 @@ module Submit64
         end
       end
       bulk_mode = request_params[:bulkCount] != nil && request_params[:bulkCount].to_i > 0
-      form = self.submit64_get_form(context)
+      form = self.submit64_get_form(resource_instance, context)
       if (!form[:allow_bulk] && bulk_mode) || (bulk_mode && edit_mode)
         raise Submit64Exception.new("You are not allowed to submit bulk", 401)
       end
@@ -320,13 +327,15 @@ module Submit64
     end
 
     private
-    def submit64_get_resource_data(form_metadata, request_params, context)
+    def submit64_get_resource_data(resource_instance, form_metadata, request_params, context)
       from_class = self.to_s
       columns_to_select = [self.primary_key.to_sym]
+      unlink_default_values = {}
       relations_data = {}
       form_metadata[:sections].each do |section|
         section[:fields].each do |field|
-          if field[:unlinked]
+          if field[:unlinked] && field[:default_value]
+            unlink_default_values[field[:field_name]] = field[:default_value]
             next
           end
           field.delete(:default_value)
@@ -341,16 +350,10 @@ module Submit64
           end
         end
       end
-      resource_data = self.all
-                          .select(columns_to_select)
-                          .where({ self.primary_key.to_sym => request_params[:resourceId] })
-                          .first
-      if resource_data.nil?
-        raise Submit64Exception.new("Resource #{request_params[:resourceName]} with primary key '#{request_params[:resourceId]}' does not exist", 404)
-      end
-
+      resource_data = resource_instance.slice(columns_to_select)
       resource_data_json = resource_data.as_json
 
+      resource_data_json.merge(unlink_default_values)
       form_metadata[:sections].each do |section|
         section[:fields].each do |field|
           if (field[:field_association_name] == nil)
@@ -419,6 +422,7 @@ module Submit64
 
         end
       end
+
       [resource_data_json, form_metadata]
     end
 
@@ -852,10 +856,10 @@ module Submit64
       }
     end
 
-    def submit64_get_form(context)
+    def submit64_get_form(resource_instance, context)
       # First structuration
       default_form_metadata = self.submit64_get_default_form
-      form_metadata = submit64_try_object_method_with_args(self, :submit64_form_builder, context)
+      form_metadata = submit64_try_object_method_with_args(self, :submit64_form_builder, resource_instance, context)
       if form_metadata.nil?
         form_metadata = default_form_metadata
       else
@@ -990,8 +994,8 @@ module Submit64
     }
     end
 
-    def submit64_get_form_for_interop(context)
-      form = submit64_get_form(context)
+    def submit64_get_form_for_interop(resource_instance, context)
+      form = submit64_get_form(resource_instance, context)
       [].each do |key_to_exclude|
         form.delete key_to_exclude
       end

@@ -11,7 +11,7 @@ Dans l'exemple suivant, le contexte est défini arbitrairement côté client et 
 # context = {
 #   name: String
 # }
-def self.submit64_form_builder(context)
+def self.submit64_form_builder(resource_instance, context)
   if context[:name] == "Special"
     {
       sections: [

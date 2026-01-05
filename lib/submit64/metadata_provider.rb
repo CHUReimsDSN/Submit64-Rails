@@ -23,10 +23,17 @@ module Submit64
       on_metadata_data = OnMetadataData.from
       submit64_try_lifecycle_callback(lifecycle_callbacks[:on_metadata_start], on_metadata_data, context)
 
-      form_metadata = self.submit64_get_form_for_interop(context)
+      resource_instance = self.all
+                          .where({ self.primary_key.to_sym => request_params[:resourceId] })
+                          .first
+      form_metadata = self.submit64_get_form_for_interop(resource_instance, context)
 
-      if !request_params[:resourceId].nil? && request_params[:resourceId] != ""
-        resource_data, form_metadata = submit64_get_resource_data(form_metadata, request_params, context)
+      if resource_instance.nil? && request_params[:resourceId] != nil
+        raise Submit64Exception.new("Resource #{request_params[:resou0rceName]} with primary key '#{request_params[:resourceId]}' does not exist", 404)
+      end
+
+      if !resource_instance.nil?
+        resource_data, form_metadata = submit64_get_resource_data(resource_instance, form_metadata, request_params, context)
       else
         resource_data, form_metadata = submit64_get_default_value_data(form_metadata, context)
       end
@@ -147,7 +154,7 @@ module Submit64
         end
       end
       bulk_mode = request_params[:bulkCount] != nil && request_params[:bulkCount].to_i > 0
-      form = self.submit64_get_form(context)
+      form = self.submit64_get_form(resource_instance, context)
       if (!form[:allow_bulk] && bulk_mode) || (bulk_mode && edit_mode)
         raise Submit64Exception.new("You are not allowed to submit bulk", 401)
       end
@@ -320,13 +327,17 @@ module Submit64
     end
 
     private
-    def submit64_get_resource_data(form_metadata, request_params, context)
+    def submit64_get_resource_data(resource_instance, form_metadata, request_params, context)
       from_class = self.to_s
       columns_to_select = [self.primary_key.to_sym]
+      unlink_default_values = {}
       relations_data = {}
       form_metadata[:sections].each do |section|
         section[:fields].each do |field|
-          if field[:unlinked]
+          if field[:unlinked] 
+            if field[:default_value]
+              unlink_default_values[field[:field_name]] = field[:default_value]
+            end
             next
           end
           field.delete(:default_value)
@@ -341,14 +352,7 @@ module Submit64
           end
         end
       end
-      resource_data = self.all
-                          .select(columns_to_select)
-                          .where({ self.primary_key.to_sym => request_params[:resourceId] })
-                          .first
-      if resource_data.nil?
-        raise Submit64Exception.new("Resource #{request_params[:resourceName]} with primary key '#{request_params[:resourceId]}' does not exist", 404)
-      end
-
+      resource_data = resource_instance.slice(columns_to_select)
       resource_data_json = resource_data.as_json
 
       form_metadata[:sections].each do |section|
@@ -364,15 +368,15 @@ module Submit64
             when "selectBelongsTo", "selectHasOne"
               if custom_select_column != nil
                 builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym])
-                                                .where({ association_class.primary_key.to_sym => resource_data[relation.join_foreign_key] })
+                                                .where({ association_class.primary_key.to_sym => resource_instance[relation.join_foreign_key] })
               else
-                builder_rows = association_class.where({ association_class.primary_key.to_sym => resource_data[relation.join_foreign_key] })
+                builder_rows = association_class.where({ association_class.primary_key.to_sym => resource_instance[relation.join_foreign_key] })
               end
               if custom_builder_row_filter != nil
                 builder_rows = builder_rows.and(custom_builder_row_filter)
               end
               if relation.scope
-                builder_rows = builder_rows.and(association_class.instance_exec(resource_data, &relation.scope))
+                builder_rows = builder_rows.and(association_class.instance_exec(resource_instance, &relation.scope))
               end 
               row = builder_rows.first
               if row.nil?
@@ -392,9 +396,9 @@ module Submit64
               resource_data_json[field[:field_name]] = row[association_class.primary_key.to_sym]
             when "selectHasMany", "selectHasAndBelongsToMany"
               if custom_select_column != nil
-                builder_rows = resource_data.public_send(field[:field_association_name]).select([*custom_select_column, association_class.primary_key.to_sym])
+                builder_rows = resource_instance.public_send(field[:field_association_name]).select([*custom_select_column, association_class.primary_key.to_sym])
               else
-                builder_rows = resource_data.public_send(field[:field_association_name])
+                builder_rows = resource_instance.public_send(field[:field_association_name])
               end
               if custom_builder_row_filter != nil
                 builder_rows = builder_rows.and(custom_builder_row_filter)
@@ -419,6 +423,10 @@ module Submit64
 
         end
       end
+      unlink_default_values.each do |key, value|
+        resource_data_json[key.to_s] = value
+      end
+
       [resource_data_json, form_metadata]
     end
 
@@ -852,10 +860,10 @@ module Submit64
       }
     end
 
-    def submit64_get_form(context)
+    def submit64_get_form(resource_instance, context)
       # First structuration
       default_form_metadata = self.submit64_get_default_form
-      form_metadata = submit64_try_object_method_with_args(self, :submit64_form_builder, context)
+      form_metadata = submit64_try_object_method_with_args(self, :submit64_form_builder, resource_instance, context)
       if form_metadata.nil?
         form_metadata = default_form_metadata
       else
@@ -990,8 +998,8 @@ module Submit64
     }
     end
 
-    def submit64_get_form_for_interop(context)
-      form = submit64_get_form(context)
+    def submit64_get_form_for_interop(resource_instance, context)
+      form = submit64_get_form(resource_instance, context)
       [].each do |key_to_exclude|
         form.delete key_to_exclude
       end

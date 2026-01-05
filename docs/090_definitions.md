@@ -7,10 +7,11 @@ title: Définition
 ## submit64_form_builder
 
 ```ruby
-def submit64_form_builder: (Context?) -> FormHash
+def submit64_form_builder: (ResourceInstance?, Context?) -> FormHash
 ```
 
 ```typescript
+type ResourceInstance = Class | nil
 type Context = Hash[String, untyped]
 
 type FormHash = {

@@ -368,15 +368,15 @@ module Submit64
             when "selectBelongsTo", "selectHasOne"
               if custom_select_column != nil
                 builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym])
-                                                .where({ association_class.primary_key.to_sym => resource_data[relation.join_foreign_key] })
+                                                .where({ association_class.primary_key.to_sym => resource_instance[relation.join_foreign_key] })
               else
-                builder_rows = association_class.where({ association_class.primary_key.to_sym => resource_data[relation.join_foreign_key] })
+                builder_rows = association_class.where({ association_class.primary_key.to_sym => resource_instance[relation.join_foreign_key] })
               end
               if custom_builder_row_filter != nil
                 builder_rows = builder_rows.and(custom_builder_row_filter)
               end
               if relation.scope
-                builder_rows = builder_rows.and(association_class.instance_exec(resource_data, &relation.scope))
+                builder_rows = builder_rows.and(association_class.instance_exec(resource_instance, &relation.scope))
               end 
               row = builder_rows.first
               if row.nil?
@@ -396,9 +396,9 @@ module Submit64
               resource_data_json[field[:field_name]] = row[association_class.primary_key.to_sym]
             when "selectHasMany", "selectHasAndBelongsToMany"
               if custom_select_column != nil
-                builder_rows = resource_data.public_send(field[:field_association_name]).select([*custom_select_column, association_class.primary_key.to_sym])
+                builder_rows = resource_instance.public_send(field[:field_association_name]).select([*custom_select_column, association_class.primary_key.to_sym])
               else
-                builder_rows = resource_data.public_send(field[:field_association_name])
+                builder_rows = resource_instance.public_send(field[:field_association_name])
               end
               if custom_builder_row_filter != nil
                 builder_rows = builder_rows.and(custom_builder_row_filter)

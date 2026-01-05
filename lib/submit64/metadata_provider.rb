@@ -334,8 +334,10 @@ module Submit64
       relations_data = {}
       form_metadata[:sections].each do |section|
         section[:fields].each do |field|
-          if field[:unlinked] && field[:default_value]
-            unlink_default_values[field[:field_name]] = field[:default_value]
+          if field[:unlinked] 
+            if field[:default_value]
+              unlink_default_values[field[:field_name]] = field[:default_value]
+            end
             next
           end
           field.delete(:default_value)

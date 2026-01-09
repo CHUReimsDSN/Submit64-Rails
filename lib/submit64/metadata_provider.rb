@@ -401,7 +401,7 @@ module Submit64
                 end
                 resource_data_json[field[:field_name]] = []
                 association_data = []
-                rows.each do |row|
+                builder_rows.each do |row|
                   association_data_entry = {
                     label: nil,
                     data: nil

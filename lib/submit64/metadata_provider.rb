@@ -976,25 +976,7 @@ module Submit64
             unlinked = true
           else
             unlinked = false
-            association = self.reflect_on_association(field_map[:target])
-            attachment = self.reflect_on_attachment(field_map[:target])
-            if !association.nil?
-              field_name = field_map[:target]
-              form_field_type = self.submit64_get_form_field_type_by_association(association)
-              form_rules = self.submit64_get_column_rules(field_map, nil, form_metadata, context[:name])
-              form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
-              label = field_map[:label] || self.submit64_beautify_target(field_map[:target])
-              field_association_name = association.name
-              field_association_class =  association.klass
-            elsif !attachment.nil?
-              field_name = field_map[:target]
-              form_field_type = self.submit64_get_form_field_type_by_attachment(attachment)
-              form_rules = self.submit64_get_column_rules(field_map, nil, form_metadata, context[:name])
-              form_select_options = []
-              label = field_map[:label] || self.submit64_beautify_target(field_map[:target])
-              field_association_name = nil
-              field_association_class = nil
-            else
+            if self.columns_hash[field[:target].to_s] != nil
               field_type = self.submit64_get_column_type_by_sgbd_type(columns_hash[field_map[:target].to_s].type)
               form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
               form_field_type = self.submit64_get_form_field_type_by_column_type(field_type, form_select_options)
@@ -1003,6 +985,28 @@ module Submit64
               label = field_map[:label] || self.submit64_beautify_target(field_map[:target])
               field_association_name = nil
               field_association_class = nil
+            else
+              association = self.reflect_on_association(field_map[:target])
+              if association != nil
+                field_name = field_map[:target]
+                form_field_type = self.submit64_get_form_field_type_by_association(association)
+                form_rules = self.submit64_get_column_rules(field_map, nil, form_metadata, context[:name])
+                form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
+                label = field_map[:label] || self.submit64_beautify_target(field_map[:target])
+                field_association_name = association.name
+                field_association_class =  association.klass
+              else
+                attachment = self.reflect_on_attachment(field_map[:target])
+                if attachment != nil
+                  field_name = field_map[:target]
+                  form_field_type = self.submit64_get_form_field_type_by_attachment(attachment)
+                  form_rules = self.submit64_get_column_rules(field_map, nil, form_metadata, context[:name])
+                  form_select_options = []
+                  label = field_map[:label] || self.submit64_beautify_target(field_map[:target])
+                  field_association_name = nil
+                  field_association_class = nil
+                end
+              end
             end
           end
           {

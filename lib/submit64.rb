@@ -6,9 +6,6 @@ require_relative "submit64/submit64_exception"
 require_relative "submit64/utils"
 require_relative "submit64/version"
 require_relative "submit64/lifecycle_data"
-require_relative "submit64/on_metadata_data"
-require_relative "submit64/on_association_data"
-require_relative "submit64/on_submit_data"
 
 module Submit64
 

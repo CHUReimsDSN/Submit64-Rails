@@ -976,7 +976,7 @@ module Submit64
             unlinked = true
           else
             unlinked = false
-            if self.columns_hash[field[:target].to_s] != nil
+            if self.columns_hash[field_map[:target].to_s] != nil
               field_type = self.submit64_get_column_type_by_sgbd_type(columns_hash[field_map[:target].to_s].type)
               form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
               form_field_type = self.submit64_get_form_field_type_by_column_type(field_type, form_select_options)

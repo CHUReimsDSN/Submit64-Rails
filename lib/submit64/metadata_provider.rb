@@ -418,31 +418,31 @@ module Submit64
                 end
                 field[:field_association_data] = association_data
             end
-          elsif field[:field_type].include? "attachment"
+          elsif (field[:field_type].include? "attachment")
             case field[:field_type]
-            when "attachmentHasOne"
-              blob = resource_instance.public_send(field[:field_name]).blob
-              if blob.nil?
-                next
-              end
-              attachment_data = {
-                id: blob.id,
-                filename: blob.filename,
-                size: blob.byte_size,
-              }
-              field[:field_attachment_data] = [attachment_data]
-            when "attachmentHasMany"
-              blobs = resource_instance.public_send(field[:field_name]).blobs
-              attachment_data = []
-              blobs.each do |blob|
-                attachment_data_entry = {
+              when "attachmentHasOne"
+                blob = resource_instance.public_send(field[:field_name]).blob
+                if blob.nil?
+                  next
+                end
+                attachment_data = {
                   id: blob.id,
                   filename: blob.filename,
                   size: blob.byte_size,
                 }
-                attachment_data << attachment_data_entry
-              end
-              field[:field_attachment_data] = attachment_data
+                field[:field_attachment_data] = [attachment_data]
+              when "attachmentHasMany"
+                blobs = resource_instance.public_send(field[:field_name]).blobs
+                attachment_data = []
+                blobs.each do |blob|
+                  attachment_data_entry = {
+                    id: blob.id,
+                    filename: blob.filename,
+                    size: blob.byte_size,
+                  }
+                  attachment_data << attachment_data_entry
+                end
+                field[:field_attachment_data] = attachment_data
             end
           end
         end

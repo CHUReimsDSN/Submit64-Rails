@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
   spec.email = ["jdebeaumont@chu-reims.fr"]
 
   spec.summary = "Tool for generating forms based on AR models"
-  spec.description = "Tool for generating forms with many feature based on AR models"
+  spec.description = "Tool for generating forms with many feature based on Active Record models"
   spec.homepage = "https://github.com/CHUReimsDSN/Submit64-Rails"
   spec.required_ruby_version = ">= 2.6.0"
 
@@ -24,7 +24,8 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   # Uncomment to register a new dependency of your gem
-  spec.add_dependency "activerecord", ">= 6.0"
+  spec.add_runtime_dependency "activerecord", ">= 6.0"
+  spec.add_runtime_dependency "activestorage", ">= 6.0"
   spec.add_development_dependency "rbs"
 
   # For more information and examples about making a new gem, check out our

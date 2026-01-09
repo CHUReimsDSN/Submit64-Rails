@@ -331,7 +331,6 @@ module Submit64
       from_class = self.to_s
       columns_to_select = [self.primary_key.to_sym]
       unlink_default_values = {}
-      relations_data = {}
       form_metadata[:sections].each do |section|
         section[:fields].each do |field|
           if field[:unlinked] 
@@ -341,14 +340,13 @@ module Submit64
             next
           end
           field.delete(:default_value)
-          if field[:field_association_name] == nil
-            columns_to_select << field[:field_name]
-          else
+          if field[:field_association_name] != nil
             relation_data = self.reflect_on_association(field[:field_association_name])
             if relation_data.class.to_s.demodulize == "BelongsToReflection"
               columns_to_select << relation_data.foreign_key
             end
-            relations_data[field[:field_name]] = relation_data
+          else
+            columns_to_select << field[:field_name]
           end
         end
       end
@@ -357,72 +355,99 @@ module Submit64
 
       form_metadata[:sections].each do |section|
         section[:fields].each do |field|
-          if (field[:field_association_name] == nil)
-            next
-          end
-          association_class = field[:field_association_class]
-          relation = self.reflect_on_association(field[:field_association_name])
-          custom_select_column = submit64_try_object_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
-          custom_builder_row_filter = submit64_try_object_method_with_args(association_class, :submit64_association_filter_rows, from_class, context)
-          case field[:field_type]
-            when "selectBelongsTo", "selectHasOne"
-              if custom_select_column != nil
-                builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym])
-                                                .where({ association_class.primary_key.to_sym => resource_instance[relation.join_foreign_key] })
-              else
-                builder_rows = association_class.where({ association_class.primary_key.to_sym => resource_instance[relation.join_foreign_key] })
-              end
-              if custom_builder_row_filter != nil
-                builder_rows = builder_rows.and(custom_builder_row_filter)
-              end
-              if relation.scope
-                builder_rows = builder_rows.and(association_class.instance_exec(resource_instance, &relation.scope))
-              end 
-              row = builder_rows.first
-              if row.nil?
-                next
-              end
-              association_data = {
-                label: [],
-                data: [row]
-              }
-              custom_display_value = submit64_try_object_method_with_args(row, :submit64_association_label, from_class, context)
-              if custom_display_value != nil
-                association_data[:label] << custom_display_value
-              else
-                association_data[:label] << submit64_association_default_label(row)
-              end
-              field[:field_association_data] = association_data
-              resource_data_json[field[:field_name]] = row[association_class.primary_key.to_sym]
-            when "selectHasMany", "selectHasAndBelongsToMany"
-              if custom_select_column != nil
-                builder_rows = resource_instance.public_send(field[:field_association_name]).select([*custom_select_column, association_class.primary_key.to_sym])
-              else
-                builder_rows = resource_instance.public_send(field[:field_association_name])
-              end
-              if custom_builder_row_filter != nil
-                builder_rows = builder_rows.and(custom_builder_row_filter)
-              end
-              resource_data_json[field[:field_name]] = []
-              association_data = {
-                label: [],
-                data: []
-              }
-              builder_rows.each do |row|
+          if (field[:field_association_name] != nil)
+            association_class = field[:field_association_class]
+            relation = self.reflect_on_association(field[:field_association_name])
+            custom_select_column = submit64_try_object_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
+            custom_builder_row_filter = submit64_try_object_method_with_args(association_class, :submit64_association_filter_rows, from_class, context)
+            case field[:field_type]
+              when "selectBelongsTo", "selectHasOne"
+                if custom_select_column != nil
+                  builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym])
+                                                  .where({ association_class.primary_key.to_sym => resource_instance[relation.join_foreign_key] })
+                else
+                  builder_rows = association_class.where({ association_class.primary_key.to_sym => resource_instance[relation.join_foreign_key] })
+                end
+                if custom_builder_row_filter != nil
+                  builder_rows = builder_rows.and(custom_builder_row_filter)
+                end
+                if relation.scope
+                  builder_rows = builder_rows.and(association_class.instance_exec(resource_instance, &relation.scope))
+                end 
+                row = builder_rows.first
+                if row.nil?
+                  next
+                end
+                association_data = {
+                  label: nil,
+                  data: row
+                }
                 custom_display_value = submit64_try_object_method_with_args(row, :submit64_association_label, from_class, context)
                 if custom_display_value != nil
-                  association_data[:label] << custom_display_value
+                  association_data[:label] = custom_display_value
                 else
-                  association_data[:label] << submit64_association_default_label(row)
+                  association_data[:label] = submit64_association_default_label(row)
                 end
-                association_data[:data] << row
-                resource_data_json[field[:field_name]] << row[association_class.primary_key.to_sym]
+                field[:field_association_data] = [association_data]
+                resource_data_json[field[:field_name]] = row[association_class.primary_key.to_sym]
+              when "selectHasMany", "selectHasAndBelongsToMany"
+                if custom_select_column != nil
+                  builder_rows = resource_instance.public_send(field[:field_association_name]).select([*custom_select_column, association_class.primary_key.to_sym])
+                else
+                  builder_rows = resource_instance.public_send(field[:field_association_name])
+                end
+                if custom_builder_row_filter != nil
+                  builder_rows = builder_rows.and(custom_builder_row_filter)
+                end
+                resource_data_json[field[:field_name]] = []
+                association_data = []
+                rows.each do |row|
+                  association_data_entry = {
+                    label: nil,
+                    data: nil
+                  }
+                  custom_display_value = submit64_try_object_method_with_args(row, :submit64_association_label, from_class, context)
+                  if custom_display_value != nil
+                    association_data_entry[:label] = custom_display_value
+                  else
+                    association_data_entry[:label] = submit64_association_default_label(row)
+                  end
+                  association_data_entry[:data] = row
+                  resource_data_json[field[:field_name]] << row[association_class.primary_key.to_sym]
+                  association_data << association_data_entry
+                end
+                field[:field_association_data] = association_data
+            end
+          elsif field[:field_type].include? "attachment"
+            case field[:field_type]
+            when "attachmentHasOne"
+              blob = resource_instance.public_send(field[:field_name]).blob
+              if blob.nil?
+                next
               end
-              field[:field_association_data] = association_data
+              attachment_data = {
+                id: blob.id,
+                filename: blob.filename,
+                size: blob.byte_size,
+              }
+              field[:field_attachment_data] = [attachment_data]
+            when "attachmentHasMany"
+              blobs = resource_instance.public_send(field[:field_name]).blobs
+              attachment_data = []
+              blobs.each do |blob|
+                attachment_data_entry = {
+                  id: blob.id,
+                  filename: blob.filename,
+                  size: blob.byte_size,
+                }
+                attachment_data << attachment_data_entry
+              end
+              field[:field_attachment_data] = attachment_data
+            end
           end
-
         end
       end
+
       unlink_default_values.each do |key, value|
         resource_data_json[key.to_s] = value
       end
@@ -577,6 +602,17 @@ module Submit64
       when "ThroughReflection"
         return nil
       else
+        return nil
+      end
+    end
+
+    def submit64_get_form_field_type_by_attachment(attachment)
+      case attachment.class.to_s.demodulize
+      when "HasOneAttachedReflection"
+        return "attachmentHasOne"
+      when "HasManyAttachedReflection"
+        return "attachmentHasMany"
+      else 
         return nil
       end
     end
@@ -902,10 +938,15 @@ module Submit64
               next
             end
           end
-          if !field[:target].nil?
-            association = self.reflect_on_association(field[:target])
-            if self.columns_hash[field[:target].to_s].nil? && (association.nil? || association.options[:polymorphic] == true)
-              field_index_to_purge << index_field
+          if field[:target] != nil
+            if self.columns_hash[field[:target].to_s].nil? 
+              association = self.reflect_on_association(field[:target])
+              if association.nil? || association.options[:polymorphic] == true
+                attachment = self.reflect_on_attachment(field[:target])
+                if attachment.nil?
+                  field_index_to_purge << index_field
+                end
+              end
             end
           else
             if field[:unlink_target].nil?
@@ -926,8 +967,8 @@ module Submit64
         fields = section_map[:fields].map do |field_map|
           if field_map[:unlink_target]
             form_select_options = self.submit64_get_column_select_options(field_map) # TODO test si enum possible sans column
-            form_field_type = field_map[:unlink_type] || 'string'
-            form_rules = [] # TODO
+            form_field_type = field_map[:unlink_type]
+            form_rules = [] # TODO test validation sans column
             field_name = field_map[:unlink_target]
             label = field_map[:label] || self.submit64_beautify_target(field_map[:unlink_target])
             field_association_name = nil
@@ -936,7 +977,24 @@ module Submit64
           else
             unlinked = false
             association = self.reflect_on_association(field_map[:target])
-            if association.nil?
+            attachment = self.reflect_on_attachment(field_map[:target])
+            if !association.nil?
+              field_name = field_map[:target]
+              form_field_type = self.submit64_get_form_field_type_by_association(association)
+              form_rules = self.submit64_get_column_rules(field_map, nil, form_metadata, context[:name])
+              form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
+              label = field_map[:label] || self.submit64_beautify_target(field_map[:target])
+              field_association_name = association.name
+              field_association_class =  association.klass
+            elsif !attachment.nil?
+              field_name = field_map[:target]
+              form_field_type = self.submit64_get_form_field_type_by_attachment(attachment)
+              form_rules = self.submit64_get_column_rules(field_map, nil, form_metadata, context[:name])
+              form_select_options = []
+              label = field_map[:label] || self.submit64_beautify_target(field_map[:target])
+              field_association_name = nil
+              field_association_class = nil
+            else
               field_type = self.submit64_get_column_type_by_sgbd_type(columns_hash[field_map[:target].to_s].type)
               form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
               form_field_type = self.submit64_get_form_field_type_by_column_type(field_type, form_select_options)
@@ -945,14 +1003,6 @@ module Submit64
               label = field_map[:label] || self.submit64_beautify_target(field_map[:target])
               field_association_name = nil
               field_association_class = nil
-            else
-              field_name = field_map[:target]
-              form_field_type = self.submit64_get_form_field_type_by_association(association)
-              form_rules = self.submit64_get_column_rules(field_map, nil, form_metadata, context[:name])
-              form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
-              field_association_name = association.name
-              field_association_class =  association.klass
-              label = field_map[:label] || self.submit64_beautify_target(field_map[:target])
             end
           end
           {

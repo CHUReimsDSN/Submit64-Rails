@@ -170,7 +170,9 @@ type FieldHash = {
               | "selectHasAndBelongsToMany"
               | "checkbox"
               | "number"
-              | "object" = "string"
+              | "object"
+              | "attachmentHasOne"
+              | "attachmentHasMany" = "string"
 }
 ```
 

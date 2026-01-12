@@ -61,7 +61,8 @@ module Submit64
                   :success,
                   :error_messages,
                   :bulk_data,
-                  :unlink_fields
+                  :unlink_fields,
+                  :attachments
 
     def self.from(resource_instance, edit_mode, bulk_mode, request_params, form, unlink_fields)
       instance = self.new()

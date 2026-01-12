@@ -1,4 +1,5 @@
-require 'active_record'
+require "base64"
+require "tempfile"
 
 module Submit64
 
@@ -158,7 +159,6 @@ module Submit64
       if (!form[:allow_bulk] && bulk_mode) || (bulk_mode && edit_mode)
         raise Submit64Exception.new("You are not allowed to submit bulk", 401)
       end
-
       unlink_fields = {}
       form[:sections].each do |section|
         section[:fields].each_with_index do |field, field_index|
@@ -168,9 +168,6 @@ module Submit64
           end
         end
       end
-
-      on_submit_data = OnSubmitData.from(resource_instance, edit_mode, bulk_mode, request_params, form, unlink_fields)
-      submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_start], on_submit_data, context)
 
       # Check for not allowed attribute
       flatten_fields = []
@@ -185,9 +182,40 @@ module Submit64
         end
       end
 
+      # Start
+      on_submit_data = OnSubmitData.from(resource_instance, edit_mode, bulk_mode, request_params, form, unlink_fields)
+      submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_start], on_submit_data, context)
       success = false
       error_messages = {}
       resource_id = resource_instance.id || nil
+
+      # Detach attachment from params
+      attachments = {}
+      all_attachments = self.reflect_on_all_attachments.map do |attachment|
+        type = submit64_get_form_field_type_by_attachment(attachment)
+        {
+          name: attachment.name,
+          type: type,
+        }
+      end
+      request_params[:resourceData].each do |key, value|
+        attachment_found = all_attachments.find do |attachment_find|
+          attachment_find[:name] == key.to_sym
+        attachment_found
+        if association_found.nil?
+          next
+        end
+        debugger
+        base64_attachments = value["add"].map do |file_pending|
+          base64_to_uploaded_file(file_pending[:base64], file_pending[:filename])
+        end
+        attachment[association_found[:name]] = request_params[:resourceData][key]
+        if attachment_found[:type] == "attachmentHasOne"
+          request_params[:resourceData][key] = base64_attachments.first
+        else
+          request_params[:resourceData][key] = base64_attachments
+        end
+      end
 
       # Compute row ids from association to instance
       all_associations = self.reflect_on_all_associations.filter do |association|
@@ -226,19 +254,17 @@ module Submit64
           builder_rows = builder_rows.and(association_class.instance_exec(nil, &association_scope))
         end 
 
-        if association_found[:type] == 'selectBelongsTo'
+        if ['selectBelongsTo', 'selectHasOne'].include? association_found[:type]
           request_params[:resourceData][key] = builder_rows.first           
         else
           request_params[:resourceData][key] = builder_rows
         end
       end
-
       
-      # Validate each attributs
+      # Assign attributs
       skip_validation = form[:skip_validation] == true
       on_submit_data.resync(skip_validation: skip_validation, error_messages: error_messages, resource_id: resource_id, request_params: request_params)
-      submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_before_validations], on_submit_data, context)
-      is_valid = true
+      submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_before_assignation], on_submit_data, context)
       begin
         resource_instance.assign_attributes(request_params[:resourceData])
       rescue => exception
@@ -253,29 +279,14 @@ module Submit64
           end
         end
       end
-      request_params[:resourceData].keys.each do |resource_key|
-        if !submit64_valid_attribute?(resource_instance, resource_key)
-          is_valid = false
-          break
-        end
-      end
 
-      # Additional models validation
-      if resource_instance.respond_to?(:validate)
-        resource_instance.method(:validate).call
-        if resource_instance.errors.count > 0
-          is_valid = false
-        end
-      end
-
-
+      # Save
       bulk_data = nil
-      if skip_validation || is_valid
-        on_submit_data.resync(is_valid: is_valid, resource_instance: resource_instance, error_messages: error_messages)
+      if skip_validation || resource_instance.valid?
+        on_submit_data.resync(is_valid: true, resource_instance: resource_instance, error_messages: error_messages)
         submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_valid_before_save], on_submit_data, context)
 
-        # May raise exception from active record callbacks, not Submit64 responsability
-        resource_instance.save!(validate: false) # already validated
+        resource_instance.save!(validate: false)
         success = true
         resource_id = resource_instance.id
         params_for_form = {
@@ -297,6 +308,7 @@ module Submit64
           end
           bulk_data = bulk_data
         end
+
         on_submit_data.resync(success: success, resource_id: resource_id, resource_instance: resource_instance, bulk_data: bulk_data, form: form)
         if bulk_mode
           submit64_try_lifecycle_callback(lifecycle_callbacks[:on_bulk_submit_success], on_submit_data, context)
@@ -818,6 +830,71 @@ module Submit64
 
         when "BlockValidator"
           rules << { type: "backend", backend_hint: "Contrainte spécifique" }
+
+        # File
+        when "ContentTypeValidator"
+          rules << { type: "allowFileContentType", including: validator.options[:in] }
+        when "SizeValidator"
+          operators = [:less_than, :greater_than, :between, :equal_to]
+          operators.each do |operator_key|
+            operator_value = validator.options[operator_key]
+            if operator_value.nil?
+              next
+            end
+            case operator_key
+            when :less_than
+              rules << { type: 'lessThanOrEqualFileLength', less_than: operator_value.to_i }
+            when :greater_than
+              rules << { type: 'greaterThanOrEqualFileLength', greater_than: operator_value.to_i }
+            when :between
+              rules << { type: 'greaterThanOrEqualFileLength', greater_than: operator_value.first.to_i }
+              rules << { type: 'lessThanOrEqualFileLength', less_than: operator_value.last.to_i }
+            when :equal_to
+              rules << { type: 'equalToFileLength', equal_to: operator_value.to_i }
+            else
+              nil
+            end
+          end
+        when "AttachedValidator"
+          rules << { type: 'required' }
+        when "LimitValidator"
+          operators = [:min, :max]
+          operators.each do |operator_key|
+            operator_value = validator.options[operator_key]
+            if operator_value.nil?
+              next
+            end
+            case operator_key
+            when :min
+              rules << { type: 'lessThanOrEqualFileCount', less_than: operator_value.to_i }
+            when :max
+              rules << { type: 'greaterThanOrEqualFileCount', greater_than: operator_value.to_i }
+            else
+              nil
+            end
+          end
+        when "TotalSizeValidator"
+          operators = [:less_than, :greater_than, :equal_to, :between]
+          operators.each do |operator_key|
+            operator_value = validator.options[operator_key]
+            if operator_value.nil?
+              next
+            end
+            case operator_key
+            when :less_than
+              rules << { type: 'lessThanOrEqualTotalFileSize', less_than: operator_value.to_i }
+            when :greater_than
+              rules << { type: 'greaterThanOrEqualTotalFileSize', greater_than: operator_value.to_i }
+            when :equal_to
+              rules << { type: 'equalToTotalFileSize', equal_to: operator_value.to_i }
+            when :between
+              rules << { type: 'greaterThanOrEqualTotalFileSize', greater_than: operator_value.first.to_i }
+              rules << { type: 'lessThanOrEqualTotalFileSize', less_than: operator_value.last.to_i }
+            else
+              nil
+            end
+          end
+
         else
           nil
         end
@@ -1060,19 +1137,28 @@ module Submit64
       form
     end
 
-    def submit64_valid_attribute?(resource_instance, attr)
-      resource_instance.errors.delete(attr)
-      resource_instance.class.validators_on(attr).map do |v|
-        v.validate_each(resource_instance, attr, resource_instance.method(attr.to_sym).call)
-      end
-      resource_instance.errors[attr].blank?
-    end
-
     def submit64_try_lifecycle_callback(proc, *args)
       if proc.nil? || proc.class != Proc
         return nil
       end
       submit64_try_method_with_args(proc, *args)
+    end
+
+    def base64_to_uploaded_file(base64, filename)
+      if base64 =~ /^data:(.*?);base64,/
+        content_type = Regexp.last_match(1)
+        base64 = base64.split(",", 2).last
+      end
+      decoded = Base64.decode64(base64)
+      tempfile = Tempfile.new(filename)
+      tempfile.binmode
+      tempfile.write(decoded)
+      tempfile.rewind
+      ActionDispatch::Http::UploadedFile.new(
+        tempfile: tempfile,
+        filename: filename,
+        type: content_type
+      )
     end
 
   end

@@ -206,7 +206,7 @@ module Submit64
           next
         end
         base64_attachments = value["add"].map do |file_pending|
-          base64_to_uploaded_file(file_pending[:base64], file_pending[:filename])
+          base64_to_uploaded_file(file_pending["base64"], file_pending["filename"])
         end
         attachments[key] = request_params[:resourceData][key]
         if attachment_found[:type] == "attachmentHasOne"

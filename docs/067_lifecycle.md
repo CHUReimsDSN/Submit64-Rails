@@ -13,7 +13,7 @@ class MonModele < ApplicationRecord
 
   def self.submit64_lifecycle_events
     {
-      on_submit_success: () -> { puts "well done" }
+      on_submit_success: -> () { puts "well done" }
     }
   end
 
@@ -27,7 +27,7 @@ class MonModele < ApplicationRecord
 
   def self.submit64_lifecycle_events
     {
-      on_submit_valid_before_save: (on_submit_data, context) -> { puts on_submit_data.resource_instance.label }
+      on_submit_valid_before_save: -> (on_submit_data, context) { puts on_submit_data.resource_instance.label }
     }
   end
 

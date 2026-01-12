@@ -357,7 +357,11 @@ module Submit64
               columns_to_select << relation_data.foreign_key
             end
           else
-            columns_to_select << field[:field_name]
+            if ["attachmentHasOne", "attachmentHasMany"].include? field[:field_type]
+              next
+            else
+              columns_to_select << field[:field_name]
+            end
           end
         end
       end

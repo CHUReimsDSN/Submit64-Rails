@@ -202,14 +202,13 @@ module Submit64
         attachment_found = all_attachments.find do |attachment_find|
           attachment_find[:name] == key.to_sym
         end
-        if association_found.nil?
+        if attachment_found.nil?
           next
         end
-        debugger
         base64_attachments = value["add"].map do |file_pending|
           base64_to_uploaded_file(file_pending[:base64], file_pending[:filename])
         end
-        attachment[association_found[:name]] = request_params[:resourceData][key]
+        attachments[key] = request_params[:resourceData][key]
         if attachment_found[:type] == "attachmentHasOne"
           request_params[:resourceData][key] = base64_attachments.first
         else

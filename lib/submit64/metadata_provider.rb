@@ -201,7 +201,7 @@ module Submit64
       request_params[:resourceData].each do |key, value|
         attachment_found = all_attachments.find do |attachment_find|
           attachment_find[:name] == key.to_sym
-        attachment_found
+        end
         if association_found.nil?
           next
         end

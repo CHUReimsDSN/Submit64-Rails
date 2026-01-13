@@ -396,10 +396,10 @@ module Submit64
                 if row.nil?
                   next
                 end
-                association_data = [{
+                association_data = {
                   label: nil,
                   data: row
-                }]
+                }
                 custom_display_value = submit64_try_object_method_with_args(row, :submit64_association_label, from_class, context)
                 if custom_display_value != nil
                   association_data[:label] = custom_display_value

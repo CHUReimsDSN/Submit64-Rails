@@ -392,13 +392,9 @@ module Submit64
                 if relation.scope
                   builder_rows = builder_rows.and(association_class.instance_exec(resource_instance, &relation.scope))
                 end 
-                row = builder_rows.first
-                if row.nil?
-                  next
-                end
                 association_data = {
                   label: nil,
-                  data: row
+                  data: builder_rows
                 }
                 custom_display_value = submit64_try_object_method_with_args(row, :submit64_association_label, from_class, context)
                 if custom_display_value != nil

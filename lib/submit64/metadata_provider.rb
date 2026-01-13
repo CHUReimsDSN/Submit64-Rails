@@ -29,8 +29,8 @@ module Submit64
                           .first
       form_metadata = self.submit64_get_form_for_interop(resource_instance, context)
 
-      if resource_instance.nil? && request_params[:resourceId] != nil
-        raise Submit64Exception.new("Resource #{request_params[:resou0rceName]} with primary key '#{request_params[:resourceId]}' does not exist", 404)
+      if resource_instance.nil? && request_params[:resourceId] != nil && !request_params[:resourceId].to_s.empty?
+        raise Submit64Exception.new("Resource #{request_params[:resourceName]} with primary key '#{request_params[:resourceId]}' does not exist", 404)
       end
 
       if !resource_instance.nil?
@@ -314,6 +314,9 @@ module Submit64
         else
           submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_success], on_submit_data, context)
         end
+
+        # Delete attachments if needed for "attachmentHasMany"
+        # TODO
       else
         error_messages = resource_instance.errors.messages.deep_dup
         resource_data_renew = { 
@@ -850,8 +853,8 @@ module Submit64
             when :greater_than
               rules << { type: 'greaterThanOrEqualFileLength', greater_than: operator_value.to_i }
             when :between
-              rules << { type: 'greaterThanOrEqualFileLength', greater_than: operator_value.first.to_i }
               rules << { type: 'lessThanOrEqualFileLength', less_than: operator_value.last.to_i }
+              rules << { type: 'greaterThanOrEqualFileLength', greater_than: operator_value.first.to_i }
             when :equal_to
               rules << { type: 'equalToFileLength', equal_to: operator_value.to_i }
             else

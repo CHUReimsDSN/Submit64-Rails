@@ -1,4 +1,5 @@
-require 'active_record'
+require "base64"
+require "tempfile"
 
 module Submit64
 
@@ -28,8 +29,8 @@ module Submit64
                           .first
       form_metadata = self.submit64_get_form_for_interop(resource_instance, context)
 
-      if resource_instance.nil? && request_params[:resourceId] != nil
-        raise Submit64Exception.new("Resource #{request_params[:resou0rceName]} with primary key '#{request_params[:resourceId]}' does not exist", 404)
+      if resource_instance.nil? && request_params[:resourceId] != nil && !request_params[:resourceId].to_s.empty?
+        raise Submit64Exception.new("Resource #{request_params[:resourceName]} with primary key '#{request_params[:resourceId]}' does not exist", 404)
       end
 
       if !resource_instance.nil?
@@ -158,7 +159,6 @@ module Submit64
       if (!form[:allow_bulk] && bulk_mode) || (bulk_mode && edit_mode)
         raise Submit64Exception.new("You are not allowed to submit bulk", 401)
       end
-
       unlink_fields = {}
       form[:sections].each do |section|
         section[:fields].each_with_index do |field, field_index|
@@ -168,9 +168,6 @@ module Submit64
           end
         end
       end
-
-      on_submit_data = OnSubmitData.from(resource_instance, edit_mode, bulk_mode, request_params, form, unlink_fields)
-      submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_start], on_submit_data, context)
 
       # Check for not allowed attribute
       flatten_fields = []
@@ -185,9 +182,39 @@ module Submit64
         end
       end
 
+      # Start
+      on_submit_data = OnSubmitData.from(resource_instance, edit_mode, bulk_mode, request_params, form, unlink_fields)
+      submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_start], on_submit_data, context)
       success = false
       error_messages = {}
       resource_id = resource_instance.id || nil
+
+      # Detach attachment from params
+      attachments = {}
+      all_attachments = self.reflect_on_all_attachments.map do |attachment|
+        type = submit64_get_form_field_type_by_attachment(attachment)
+        {
+          name: attachment.name,
+          type: type,
+        }
+      end
+      request_params[:resourceData].each do |key, value|
+        attachment_found = all_attachments.find do |attachment_find|
+          attachment_find[:name] == key.to_sym
+        end
+        if attachment_found.nil?
+          next
+        end
+        base64_attachments = value["add"].map do |file_pending|
+          base64_to_uploaded_file(file_pending["base64"], file_pending["filename"])
+        end
+        attachments[key] = request_params[:resourceData][key]
+        if attachment_found[:type] == "attachmentHasOne"
+          request_params[:resourceData][key] = base64_attachments.first
+        else
+          request_params[:resourceData][key] = base64_attachments
+        end
+      end
 
       # Compute row ids from association to instance
       all_associations = self.reflect_on_all_associations.filter do |association|
@@ -226,19 +253,17 @@ module Submit64
           builder_rows = builder_rows.and(association_class.instance_exec(nil, &association_scope))
         end 
 
-        if association_found[:type] == 'selectBelongsTo'
+        if ['selectBelongsTo', 'selectHasOne'].include? association_found[:type]
           request_params[:resourceData][key] = builder_rows.first           
         else
           request_params[:resourceData][key] = builder_rows
         end
       end
-
       
-      # Validate each attributs
+      # Assign attributs
       skip_validation = form[:skip_validation] == true
       on_submit_data.resync(skip_validation: skip_validation, error_messages: error_messages, resource_id: resource_id, request_params: request_params)
-      submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_before_validations], on_submit_data, context)
-      is_valid = true
+      submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_before_assignation], on_submit_data, context)
       begin
         resource_instance.assign_attributes(request_params[:resourceData])
       rescue => exception
@@ -253,29 +278,14 @@ module Submit64
           end
         end
       end
-      request_params[:resourceData].keys.each do |resource_key|
-        if !submit64_valid_attribute?(resource_instance, resource_key)
-          is_valid = false
-          break
-        end
-      end
 
-      # Additional models validation
-      if resource_instance.respond_to?(:validate)
-        resource_instance.method(:validate).call
-        if resource_instance.errors.count > 0
-          is_valid = false
-        end
-      end
-
-
+      # Save
       bulk_data = nil
-      if skip_validation || is_valid
-        on_submit_data.resync(is_valid: is_valid, resource_instance: resource_instance, error_messages: error_messages)
+      if skip_validation || resource_instance.valid?
+        on_submit_data.resync(is_valid: true, resource_instance: resource_instance, error_messages: error_messages)
         submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_valid_before_save], on_submit_data, context)
 
-        # May raise exception from active record callbacks, not Submit64 responsability
-        resource_instance.save!(validate: false) # already validated
+        resource_instance.save!(validate: false)
         success = true
         resource_id = resource_instance.id
         params_for_form = {
@@ -297,12 +307,16 @@ module Submit64
           end
           bulk_data = bulk_data
         end
+
         on_submit_data.resync(success: success, resource_id: resource_id, resource_instance: resource_instance, bulk_data: bulk_data, form: form)
         if bulk_mode
           submit64_try_lifecycle_callback(lifecycle_callbacks[:on_bulk_submit_success], on_submit_data, context)
         else
           submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_success], on_submit_data, context)
         end
+
+        # Delete attachments if needed for "attachmentHasMany"
+        # TODO
       else
         error_messages = resource_instance.errors.messages.deep_dup
         resource_data_renew = { 
@@ -331,7 +345,6 @@ module Submit64
       from_class = self.to_s
       columns_to_select = [self.primary_key.to_sym]
       unlink_default_values = {}
-      relations_data = {}
       form_metadata[:sections].each do |section|
         section[:fields].each do |field|
           if field[:unlinked] 
@@ -341,14 +354,17 @@ module Submit64
             next
           end
           field.delete(:default_value)
-          if field[:field_association_name] == nil
-            columns_to_select << field[:field_name]
-          else
+          if field[:field_association_name] != nil
             relation_data = self.reflect_on_association(field[:field_association_name])
             if relation_data.class.to_s.demodulize == "BelongsToReflection"
               columns_to_select << relation_data.foreign_key
             end
-            relations_data[field[:field_name]] = relation_data
+          else
+            if ["attachmentHasOne", "attachmentHasMany"].include? field[:field_type]
+              next
+            else
+              columns_to_select << field[:field_name]
+            end
           end
         end
       end
@@ -357,72 +373,95 @@ module Submit64
 
       form_metadata[:sections].each do |section|
         section[:fields].each do |field|
-          if (field[:field_association_name] == nil)
-            next
-          end
-          association_class = field[:field_association_class]
-          relation = self.reflect_on_association(field[:field_association_name])
-          custom_select_column = submit64_try_object_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
-          custom_builder_row_filter = submit64_try_object_method_with_args(association_class, :submit64_association_filter_rows, from_class, context)
-          case field[:field_type]
-            when "selectBelongsTo", "selectHasOne"
-              if custom_select_column != nil
-                builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym])
-                                                .where({ association_class.primary_key.to_sym => resource_instance[relation.join_foreign_key] })
-              else
-                builder_rows = association_class.where({ association_class.primary_key.to_sym => resource_instance[relation.join_foreign_key] })
-              end
-              if custom_builder_row_filter != nil
-                builder_rows = builder_rows.and(custom_builder_row_filter)
-              end
-              if relation.scope
-                builder_rows = builder_rows.and(association_class.instance_exec(resource_instance, &relation.scope))
-              end 
-              row = builder_rows.first
-              if row.nil?
-                next
-              end
-              association_data = {
-                label: [],
-                data: [row]
-              }
-              custom_display_value = submit64_try_object_method_with_args(row, :submit64_association_label, from_class, context)
-              if custom_display_value != nil
-                association_data[:label] << custom_display_value
-              else
-                association_data[:label] << submit64_association_default_label(row)
-              end
-              field[:field_association_data] = association_data
-              resource_data_json[field[:field_name]] = row[association_class.primary_key.to_sym]
-            when "selectHasMany", "selectHasAndBelongsToMany"
-              if custom_select_column != nil
-                builder_rows = resource_instance.public_send(field[:field_association_name]).select([*custom_select_column, association_class.primary_key.to_sym])
-              else
-                builder_rows = resource_instance.public_send(field[:field_association_name])
-              end
-              if custom_builder_row_filter != nil
-                builder_rows = builder_rows.and(custom_builder_row_filter)
-              end
-              resource_data_json[field[:field_name]] = []
-              association_data = {
-                label: [],
-                data: []
-              }
-              builder_rows.each do |row|
+          if (field[:field_association_name] != nil)
+            association_class = field[:field_association_class]
+            relation = self.reflect_on_association(field[:field_association_name])
+            custom_select_column = submit64_try_object_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
+            custom_builder_row_filter = submit64_try_object_method_with_args(association_class, :submit64_association_filter_rows, from_class, context)
+            case field[:field_type]
+              when "selectBelongsTo", "selectHasOne"
+                if custom_select_column != nil
+                  builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym])
+                                                  .where({ association_class.primary_key.to_sym => resource_instance[relation.join_foreign_key] })
+                else
+                  builder_rows = association_class.where({ association_class.primary_key.to_sym => resource_instance[relation.join_foreign_key] })
+                end
+                if custom_builder_row_filter != nil
+                  builder_rows = builder_rows.and(custom_builder_row_filter)
+                end
+                if relation.scope
+                  builder_rows = builder_rows.and(association_class.instance_exec(resource_instance, &relation.scope))
+                end 
+                association_data = {
+                  label: nil,
+                  data: builder_rows
+                }
                 custom_display_value = submit64_try_object_method_with_args(row, :submit64_association_label, from_class, context)
                 if custom_display_value != nil
-                  association_data[:label] << custom_display_value
+                  association_data[:label] = custom_display_value
                 else
-                  association_data[:label] << submit64_association_default_label(row)
+                  association_data[:label] = submit64_association_default_label(row)
                 end
-                association_data[:data] << row
-                resource_data_json[field[:field_name]] << row[association_class.primary_key.to_sym]
-              end
-              field[:field_association_data] = association_data
+                field[:field_association_data] = [association_data]
+                resource_data_json[field[:field_name]] = row[association_class.primary_key.to_sym]
+              when "selectHasMany", "selectHasAndBelongsToMany"
+                if custom_select_column != nil
+                  builder_rows = resource_instance.public_send(field[:field_association_name]).select([*custom_select_column, association_class.primary_key.to_sym])
+                else
+                  builder_rows = resource_instance.public_send(field[:field_association_name])
+                end
+                if custom_builder_row_filter != nil
+                  builder_rows = builder_rows.and(custom_builder_row_filter)
+                end
+                resource_data_json[field[:field_name]] = []
+                association_data = []
+                builder_rows.each do |row|
+                  association_data_entry = {
+                    label: nil,
+                    data: nil
+                  }
+                  custom_display_value = submit64_try_object_method_with_args(row, :submit64_association_label, from_class, context)
+                  if custom_display_value != nil
+                    association_data_entry[:label] = custom_display_value
+                  else
+                    association_data_entry[:label] = submit64_association_default_label(row)
+                  end
+                  association_data_entry[:data] = row
+                  resource_data_json[field[:field_name]] << row[association_class.primary_key.to_sym]
+                  association_data << association_data_entry
+                end
+                field[:field_association_data] = association_data
+            end
+          elsif (field[:field_type].include? "attachment")
+            case field[:field_type]
+              when "attachmentHasOne"
+                blob = resource_instance.public_send(field[:field_name]).blob
+                if blob.nil?
+                  next
+                end
+                attachment_data = {
+                  id: blob.id,
+                  filename: blob.filename,
+                  size: blob.byte_size,
+                }
+                field[:field_attachment_data] = [attachment_data]
+              when "attachmentHasMany"
+                blobs = resource_instance.public_send(field[:field_name]).blobs
+                attachment_data = []
+                blobs.each do |blob|
+                  attachment_data_entry = {
+                    id: blob.id,
+                    filename: blob.filename,
+                    size: blob.byte_size,
+                  }
+                  attachment_data << attachment_data_entry
+                end
+                field[:field_attachment_data] = attachment_data
+            end
           end
-
         end
       end
+
       unlink_default_values.each do |key, value|
         resource_data_json[key.to_s] = value
       end
@@ -577,6 +616,17 @@ module Submit64
       when "ThroughReflection"
         return nil
       else
+        return nil
+      end
+    end
+
+    def submit64_get_form_field_type_by_attachment(attachment)
+      case attachment.class.to_s.demodulize
+      when "HasOneAttachedReflection"
+        return "attachmentHasOne"
+      when "HasManyAttachedReflection"
+        return "attachmentHasMany"
+      else 
         return nil
       end
     end
@@ -782,6 +832,71 @@ module Submit64
 
         when "BlockValidator"
           rules << { type: "backend", backend_hint: "Contrainte spécifique" }
+
+        # File
+        when "ContentTypeValidator"
+          rules << { type: "allowFileContentType", including: validator.options[:in] }
+        when "SizeValidator"
+          operators = [:less_than, :greater_than, :between, :equal_to]
+          operators.each do |operator_key|
+            operator_value = validator.options[operator_key]
+            if operator_value.nil?
+              next
+            end
+            case operator_key
+            when :less_than
+              rules << { type: 'lessThanOrEqualFileLength', less_than: operator_value.to_i }
+            when :greater_than
+              rules << { type: 'greaterThanOrEqualFileLength', greater_than: operator_value.to_i }
+            when :between
+              rules << { type: 'lessThanOrEqualFileLength', less_than: operator_value.last.to_i }
+              rules << { type: 'greaterThanOrEqualFileLength', greater_than: operator_value.first.to_i }
+            when :equal_to
+              rules << { type: 'equalToFileLength', equal_to: operator_value.to_i }
+            else
+              nil
+            end
+          end
+        when "AttachedValidator"
+          rules << { type: 'required' }
+        when "LimitValidator"
+          operators = [:min, :max]
+          operators.each do |operator_key|
+            operator_value = validator.options[operator_key]
+            if operator_value.nil?
+              next
+            end
+            case operator_key
+            when :min
+              rules << { type: 'lessThanOrEqualFileCount', less_than: operator_value.to_i }
+            when :max
+              rules << { type: 'greaterThanOrEqualFileCount', greater_than: operator_value.to_i }
+            else
+              nil
+            end
+          end
+        when "TotalSizeValidator"
+          operators = [:less_than, :greater_than, :equal_to, :between]
+          operators.each do |operator_key|
+            operator_value = validator.options[operator_key]
+            if operator_value.nil?
+              next
+            end
+            case operator_key
+            when :less_than
+              rules << { type: 'lessThanOrEqualTotalFileSize', less_than: operator_value.to_i }
+            when :greater_than
+              rules << { type: 'greaterThanOrEqualTotalFileSize', greater_than: operator_value.to_i }
+            when :equal_to
+              rules << { type: 'equalToTotalFileSize', equal_to: operator_value.to_i }
+            when :between
+              rules << { type: 'greaterThanOrEqualTotalFileSize', greater_than: operator_value.first.to_i }
+              rules << { type: 'lessThanOrEqualTotalFileSize', less_than: operator_value.last.to_i }
+            else
+              nil
+            end
+          end
+
         else
           nil
         end
@@ -902,10 +1017,15 @@ module Submit64
               next
             end
           end
-          if !field[:target].nil?
-            association = self.reflect_on_association(field[:target])
-            if self.columns_hash[field[:target].to_s].nil? && (association.nil? || association.options[:polymorphic] == true)
-              field_index_to_purge << index_field
+          if field[:target] != nil
+            if self.columns_hash[field[:target].to_s].nil? 
+              association = self.reflect_on_association(field[:target])
+              if association.nil? || association.options[:polymorphic] == true
+                attachment = self.reflect_on_attachment(field[:target])
+                if attachment.nil?
+                  field_index_to_purge << index_field
+                end
+              end
             end
           else
             if field[:unlink_target].nil?
@@ -926,8 +1046,8 @@ module Submit64
         fields = section_map[:fields].map do |field_map|
           if field_map[:unlink_target]
             form_select_options = self.submit64_get_column_select_options(field_map) # TODO test si enum possible sans column
-            form_field_type = field_map[:unlink_type] || 'string'
-            form_rules = [] # TODO
+            form_field_type = field_map[:unlink_type]
+            form_rules = [] # TODO test validation sans column
             field_name = field_map[:unlink_target]
             label = field_map[:label] || self.submit64_beautify_target(field_map[:unlink_target])
             field_association_name = nil
@@ -935,8 +1055,7 @@ module Submit64
             unlinked = true
           else
             unlinked = false
-            association = self.reflect_on_association(field_map[:target])
-            if association.nil?
+            if self.columns_hash[field_map[:target].to_s] != nil
               field_type = self.submit64_get_column_type_by_sgbd_type(columns_hash[field_map[:target].to_s].type)
               form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
               form_field_type = self.submit64_get_form_field_type_by_column_type(field_type, form_select_options)
@@ -946,13 +1065,27 @@ module Submit64
               field_association_name = nil
               field_association_class = nil
             else
-              field_name = field_map[:target]
-              form_field_type = self.submit64_get_form_field_type_by_association(association)
-              form_rules = self.submit64_get_column_rules(field_map, nil, form_metadata, context[:name])
-              form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
-              field_association_name = association.name
-              field_association_class =  association.klass
-              label = field_map[:label] || self.submit64_beautify_target(field_map[:target])
+              association = self.reflect_on_association(field_map[:target])
+              if association != nil
+                field_name = field_map[:target]
+                form_field_type = self.submit64_get_form_field_type_by_association(association)
+                form_rules = self.submit64_get_column_rules(field_map, nil, form_metadata, context[:name])
+                form_select_options = self.submit64_get_column_select_options(field_map, field_map[:target])
+                label = field_map[:label] || self.submit64_beautify_target(field_map[:target])
+                field_association_name = association.name
+                field_association_class =  association.klass
+              else
+                attachment = self.reflect_on_attachment(field_map[:target])
+                if attachment != nil
+                  field_name = field_map[:target]
+                  form_field_type = self.submit64_get_form_field_type_by_attachment(attachment)
+                  form_rules = self.submit64_get_column_rules(field_map, nil, form_metadata, context[:name])
+                  form_select_options = []
+                  label = field_map[:label] || self.submit64_beautify_target(field_map[:target])
+                  field_association_name = nil
+                  field_association_class = nil
+                end
+              end
             end
           end
           {
@@ -1006,19 +1139,28 @@ module Submit64
       form
     end
 
-    def submit64_valid_attribute?(resource_instance, attr)
-      resource_instance.errors.delete(attr)
-      resource_instance.class.validators_on(attr).map do |v|
-        v.validate_each(resource_instance, attr, resource_instance.method(attr.to_sym).call)
-      end
-      resource_instance.errors[attr].blank?
-    end
-
     def submit64_try_lifecycle_callback(proc, *args)
       if proc.nil? || proc.class != Proc
         return nil
       end
       submit64_try_method_with_args(proc, *args)
+    end
+
+    def base64_to_uploaded_file(base64, filename)
+      if base64 =~ /^data:(.*?);base64,/
+        content_type = Regexp.last_match(1)
+        base64 = base64.split(",", 2).last
+      end
+      decoded = Base64.decode64(base64)
+      tempfile = Tempfile.new(filename)
+      tempfile.binmode
+      tempfile.write(decoded)
+      tempfile.rewind
+      ActionDispatch::Http::UploadedFile.new(
+        tempfile: tempfile,
+        filename: filename,
+        type: content_type
+      )
     end
 
   end

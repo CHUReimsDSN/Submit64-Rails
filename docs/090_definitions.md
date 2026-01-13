@@ -99,7 +99,7 @@ type SectionHash = {
 type FieldHash = {
 
   /*
-  * Cible du champ, une colonne en base ou le nom d'une relation
+  * Cible du champ, une colonne en base, le nom d'une relation ou le nom d'une pièce jointe
   */
   target: Symbol
 
@@ -170,7 +170,9 @@ type FieldHash = {
               | "selectHasAndBelongsToMany"
               | "checkbox"
               | "number"
-              | "object" = "string"
+              | "object"
+              | "attachmentHasOne"
+              | "attachmentHasMany" = "string"
 }
 ```
 
@@ -244,7 +246,7 @@ type LifeCycles = {
   on_get_association_end?: (on_association_data, Context) -> nil,
 
   on_submit_start?: (on_submit_data, Context) -> nil,
-  on_submit_before_validations?: (on_submit_data, Context) -> nil,
+  on_submit_before_assignation?: (on_submit_data, Context) -> nil,
   on_submit_valid_before_save?: (on_submit_data, Context) -> nil,
   on_submit_success?: (on_submit_data, Context) -> nil,
   on_bulk_submit_success?: (on_submit_data, Context) -> nil,

@@ -829,7 +829,7 @@ module Submit64
           end
 
         when "PresenceValidator"
-          rules << { type: 'requiredFile' }
+          rules << { type: 'required' }
 
         when "UniquenessValidator"
           rules << { type: "backend", backend_hint: "Contrainte d'unicité" }
@@ -862,7 +862,7 @@ module Submit64
             end
           end
         when "AttachedValidator"
-          rules << { type: 'required' }
+          rules << { type: 'requiredFile' }
         when "LimitValidator"
           operators = [:min, :max]
           operators.each do |operator_key|

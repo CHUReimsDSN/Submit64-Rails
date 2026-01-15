@@ -872,9 +872,9 @@ module Submit64
             end
             case operator_key
             when :min
-              rules << { type: 'lessThanOrEqualFileCount', less_than: operator_value.to_i }
+              rules << { type: 'greaterThanOrEqualFileCount', less_than: operator_value.to_i }
             when :max
-              rules << { type: 'greaterThanOrEqualFileCount', greater_than: operator_value.to_i }
+              rules << { type: 'lessThanOrEqualFileCount', greater_than: operator_value.to_i }
             else
               nil
             end

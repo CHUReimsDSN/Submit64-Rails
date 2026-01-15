@@ -829,7 +829,7 @@ module Submit64
           end
 
         when "PresenceValidator"
-          rules << { type: 'required' }
+          rules << { type: 'requiredFile' }
 
         when "UniquenessValidator"
           rules << { type: "backend", backend_hint: "Contrainte d'unicité" }

@@ -180,7 +180,7 @@ module Submit64
         if flatten_fields.exclude? resource_key
           raise Submit64Exception.new("You are not allowed to edit this attribut: #{resource_key}", 401)
         end
-      end
+      end     
 
       # Start
       on_submit_data = OnSubmitData.from(resource_instance, edit_mode, bulk_mode, request_params, form, unlink_fields)
@@ -209,6 +209,7 @@ module Submit64
           base64_to_uploaded_file(file_pending["base64"], file_pending["filename"])
         end
         attachments[key] = request_params[:resourceData][key]
+        attachments[key]["type"] = attachment_found[:type]
         if attachment_found[:type] == "attachmentHasOne"
           request_params[:resourceData][key] = base64_attachments.first
         else
@@ -262,7 +263,7 @@ module Submit64
       
       # Assign attributs
       skip_validation = form[:skip_validation] == true
-      on_submit_data.resync(skip_validation: skip_validation, error_messages: error_messages, resource_id: resource_id, request_params: request_params)
+      on_submit_data.resync(skip_validation: skip_validation, error_messages: error_messages, resource_id: resource_id, request_params: request_params, attachments: attachments)
       submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_before_assignation], on_submit_data, context)
       begin
         resource_instance.assign_attributes(request_params[:resourceData])
@@ -316,7 +317,26 @@ module Submit64
         end
 
         # Delete attachments if needed for "attachmentHasMany"
-        # TODO
+        allowed_attachment_id_to_delete = []
+        form[:sections].each do |section|
+          section[:fields].each do |field|
+            if (field[:field_attachment_data])
+              field[:field_attachment_data].each do |field_attachment_data_each|
+                allowed_attachment_id_to_delete << field_attachment_data_each[:attachment_id]
+              end
+            end
+          end
+        end
+        attachments.each do |key_attachment, attachment_data|
+          if attachment_data["type"] == "attachmentHasMany"
+            attachment_data["delete"].each do |attachment_to_delete|
+              attachment_id = attachment_to_delete
+              if allowed_attachment_id_to_delete.include?(attachment_id)
+                ActiveStorage::Attachment.find_by(attachment_id)&.purge
+              end
+            end
+          end
+        end
       else
         error_messages = resource_instance.errors.messages.deep_dup
         resource_data_renew = { 
@@ -439,22 +459,29 @@ module Submit64
           elsif (field[:field_type].include? "attachment")
             case field[:field_type]
               when "attachmentHasOne"
-                blob = resource_instance.public_send(field[:field_name]).blob
+                attachment = resource_instance.public_send(field[:field_name]).attachment
+                if attachment.nil?
+                  next
+                end
+                blob = attachment.blob
                 if blob.nil?
                   next
                 end
                 attachment_data = {
-                  id: blob.id,
+                  blob_id: blob.id,
+                  attachment_id: attachment.id,
                   filename: blob.filename,
                   size: blob.byte_size,
                 }
                 field[:field_attachment_data] = [attachment_data]
               when "attachmentHasMany"
-                blobs = resource_instance.public_send(field[:field_name]).blobs
                 attachment_data = []
-                blobs.each do |blob|
+                attachments = resource_instance.public_send(field[:field_name]).attachments.includes(:blob)
+                attachments.each do |attachment|
+                  blob = attachment.blob
                   attachment_data_entry = {
-                    id: blob.id,
+                    blob_id: blob.id,
+                    attachment_id: attachment.id,
                     filename: blob.filename,
                     size: blob.byte_size,
                   }
@@ -862,7 +889,7 @@ module Submit64
             end
           end
         when "AttachedValidator"
-          rules << { type: 'required' }
+          rules << { type: 'requiredUploadFile' }
         when "LimitValidator"
           operators = [:min, :max]
           operators.each do |operator_key|
@@ -872,9 +899,9 @@ module Submit64
             end
             case operator_key
             when :min
-              rules << { type: 'lessThanOrEqualFileCount', less_than: operator_value.to_i }
-            when :max
               rules << { type: 'greaterThanOrEqualFileCount', greater_than: operator_value.to_i }
+            when :max
+              rules << { type: 'lessThanOrEqualFileCount', less_than: operator_value.to_i }
             else
               nil
             end

@@ -460,6 +460,9 @@ module Submit64
             case field[:field_type]
               when "attachmentHasOne"
                 attachment = resource_instance.public_send(field[:field_name]).attachment
+                if attachment.nil?
+                  next
+                end
                 blob = attachment.blob
                 if blob.nil?
                   next

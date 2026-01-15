@@ -330,7 +330,7 @@ module Submit64
         attachments.each do |key_attachment, attachment_data|
           if attachment_data["type"] == "attachmentHasMany"
             attachment_data["delete"].each do |attachment_to_delete|
-              attachment_id = attachment_to_delete["attachment_id"]
+              attachment_id = attachment_to_delete
               if allowed_attachment_id_to_delete.include?(attachment_id)
                 ActiveStorage::Attachment.find_by(attachment_id)&.purge
               end

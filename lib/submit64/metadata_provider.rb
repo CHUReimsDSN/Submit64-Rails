@@ -220,7 +220,7 @@ module Submit64
               attachments_signed_ids_to_keep << attachment_there_each.signed_id
             end
           end
-          request_params[:resourceData][key] = base64_attachments + attachments_signed_ids_to_keep # TODO check si tout est ok
+          request_params[:resourceData][key] = base64_attachments + attachments_signed_ids_to_keep
         end
       end
       

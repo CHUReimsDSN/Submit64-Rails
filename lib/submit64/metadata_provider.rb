@@ -214,7 +214,7 @@ module Submit64
           request_params[:resourceData][key] = base64_attachments.first
         else
           attachments_signed_ids_to_keep = []
-          all_attachments_already_there = resource_instance.public_send(field[:field_name]).attachments.includes(:blob)
+          all_attachments_already_there = resource_instance.public_send(key).attachments.includes(:blob)
           attachments_to_keep = all_attachments_already_there.each do |attachment_there_each|
             if value["delete"].exclude?(attachment_there_each.id)
               attachments_signed_ids_to_keep << attachment_there_each.signed_id

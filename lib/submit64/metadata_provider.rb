@@ -215,12 +215,12 @@ module Submit64
         else
           attachments_signed_ids_to_keep = []
           all_attachments_already_there = resource_instance.public_send(key).attachments.includes(:blob)
-          attachments_to_keep = all_attachments_already_there.each do |attachment_there_each|
+          all_attachments_already_there.each do |attachment_there_each|
             if value["delete"].exclude?(attachment_there_each.id)
               attachments_signed_ids_to_keep << attachment_there_each.signed_id
             end
           end
-          request_params[:resourceData][key] = base64_attachments + attachments_to_keep # TODO check si tout est ok
+          request_params[:resourceData][key] = base64_attachments + attachments_signed_ids_to_keep # TODO check si tout est ok
         end
       end
       
@@ -259,8 +259,7 @@ module Submit64
         association_scope = self.reflect_on_association(association_found[:name])&.scope
         if association_scope
           builder_rows = builder_rows.and(association_class.instance_exec(nil, &association_scope))
-        end 
-
+        end
         if ['selectBelongsTo', 'selectHasOne'].include? association_found[:type]
           request_params[:resourceData][key] = builder_rows.first           
         else

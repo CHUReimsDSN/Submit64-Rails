@@ -25,8 +25,6 @@ class MonModele < ActiveRecord::Base
 
 end
 ```
-<br /><br /> 
-
 
 ::: warning Important 
 Consulter la [Définition API](/api-definition/models.md#submit64_form_builder) pour connaître les attributs disponibles.

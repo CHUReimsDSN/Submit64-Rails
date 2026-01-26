@@ -29,7 +29,7 @@ end
 ```
 
 
-::: warning Important 
+::: danger Attention 
 Ne pas se baser sur le contexte pour définir des politiques de sécurité, 
 car celui-ci provient entièrement du client.
 :::

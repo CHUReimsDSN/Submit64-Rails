@@ -25,8 +25,8 @@ module Submit64
       submit64_try_lifecycle_callback(lifecycle_callbacks[:on_metadata_start], on_metadata_data, context)
 
       resource_instance = self.all
-                          .where({ self.primary_key.to_sym => request_params[:resourceId] })
-                          .first
+                              .where({ self.primary_key.to_sym => request_params[:resourceId] })
+                              .first
       form_metadata = self.submit64_get_form_for_interop(resource_instance, context)
 
       if resource_instance.nil? && request_params[:resourceId] != nil && !request_params[:resourceId].to_s.empty?

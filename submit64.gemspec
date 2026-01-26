@@ -27,7 +27,6 @@ Gem::Specification.new do |spec|
   spec.add_runtime_dependency "activerecord", ">= 6.0"
   # spec.add_runtime_dependency "activestorage", ">= 6.0"
   # spec.add_runtime_dependency "active_storage_validations", ">= 3.0"
-  spec.add_development_dependency "rbs"
 
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html

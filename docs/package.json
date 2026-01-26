@@ -1,0 +1,16 @@
+{
+  "scripts": {
+    "compute-docs": "ts-node scripts/compute.ts",
+    "docs:dev": "npm run compute-docs && vitepress dev",
+    "docs:build": "npm run compute-docs && vitepress build",
+    "docs:preview": "npm run compute-docs && vitepress preview"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.10",
+    "ts-morph": "^27.0.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
+    "vitepress": "^2.0.0-alpha.15"
+  },
+  "type": "module"
+}

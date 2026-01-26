@@ -12,24 +12,21 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          ruby-version: '3.3'
+          node-version: '24.13.0'
 
-      - name: Install Bundler & Gems
-        run: bundle install --gemfile=.github/workflows/Gemfile.docs
+      - name: Install dependencies and build docs
+        run: |
+          cd docs
+          npm install
+          npm run docs:build
 
-      - name: Formating script before Jekyll compilation
-        run: bundle exec --gemfile=.github/workflows/Gemfile.docs ruby .github/workflows/format_pages.rb
-
-      - name: Build Jekyll site
-        run: bundle exec --gemfile=.github/workflows/Gemfile.docs jekyll build --source docs --destination _site
-
-      - name: Upload site artifact
+      - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: _site
+          path: docs/.vitepress/dist
 
   deploy:
     runs-on: ubuntu-latest
@@ -40,7 +37,6 @@ jobs:
 
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Deploy to GitHub Pages

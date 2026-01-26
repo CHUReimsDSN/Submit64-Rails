@@ -25,8 +25,8 @@ module Submit64
       submit64_try_lifecycle_callback(lifecycle_callbacks[:on_metadata_start], on_metadata_data, context)
 
       resource_instance = self.all
-                          .where({ self.primary_key.to_sym => request_params[:resourceId] })
-                          .first
+                              .where({ self.primary_key.to_sym => request_params[:resourceId] })
+                              .first
       form_metadata = self.submit64_get_form_for_interop(resource_instance, context)
 
       if resource_instance.nil? && request_params[:resourceId] != nil && !request_params[:resourceId].to_s.empty?
@@ -189,7 +189,7 @@ module Submit64
       error_messages = {}
       resource_id = resource_instance.id || nil
 
-      # Detach attachment from params
+      # Compute attachments
       attachments = {}
       all_attachments = self.reflect_on_all_attachments.map do |attachment|
         type = submit64_get_form_field_type_by_attachment(attachment)
@@ -213,10 +213,17 @@ module Submit64
         if attachment_found[:type] == "attachmentHasOne"
           request_params[:resourceData][key] = base64_attachments.first
         else
-          request_params[:resourceData][key] = base64_attachments
+          attachments_signed_ids_to_keep = []
+          all_attachments_already_there = resource_instance.public_send(key).attachments.includes(:blob)
+          all_attachments_already_there.each do |attachment_there_each|
+            if value["delete"].exclude?(attachment_there_each.id)
+              attachments_signed_ids_to_keep << attachment_there_each.signed_id
+            end
+          end
+          request_params[:resourceData][key] = base64_attachments + attachments_signed_ids_to_keep
         end
       end
-
+      
       # Compute row ids from association to instance
       all_associations = self.reflect_on_all_associations.filter do |association|
         association.options[:polymorphic] != true
@@ -252,8 +259,7 @@ module Submit64
         association_scope = self.reflect_on_association(association_found[:name])&.scope
         if association_scope
           builder_rows = builder_rows.and(association_class.instance_exec(nil, &association_scope))
-        end 
-
+        end
         if ['selectBelongsTo', 'selectHasOne'].include? association_found[:type]
           request_params[:resourceData][key] = builder_rows.first           
         else
@@ -315,28 +321,7 @@ module Submit64
         else
           submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_success], on_submit_data, context)
         end
-
-        # Delete attachments if needed for "attachmentHasMany"
-        allowed_attachment_id_to_delete = []
-        form[:sections].each do |section|
-          section[:fields].each do |field|
-            if (field[:field_attachment_data])
-              field[:field_attachment_data].each do |field_attachment_data_each|
-                allowed_attachment_id_to_delete << field_attachment_data_each[:attachment_id]
-              end
-            end
-          end
-        end
-        attachments.each do |key_attachment, attachment_data|
-          if attachment_data["type"] == "attachmentHasMany"
-            attachment_data["delete"].each do |attachment_to_delete|
-              attachment_id = attachment_to_delete
-              if allowed_attachment_id_to_delete.include?(attachment_id)
-                ActiveStorage::Attachment.find_by(attachment_id)&.purge
-              end
-            end
-          end
-        end
+        
       else
         error_messages = resource_instance.errors.messages.deep_dup
         resource_data_renew = { 
@@ -468,7 +453,6 @@ module Submit64
                   next
                 end
                 attachment_data = {
-                  blob_id: blob.id,
                   attachment_id: attachment.id,
                   filename: blob.filename,
                   size: blob.byte_size,
@@ -480,7 +464,6 @@ module Submit64
                 attachments.each do |attachment|
                   blob = attachment.blob
                   attachment_data_entry = {
-                    blob_id: blob.id,
                     attachment_id: attachment.id,
                     filename: blob.filename,
                     size: blob.byte_size,

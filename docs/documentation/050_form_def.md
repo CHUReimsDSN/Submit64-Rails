@@ -6,9 +6,10 @@ title: Définition d'un formulaire
 
 La méthode `submit64_form_builder` permet de définir un formulaire pour un modèle donné.
 
-{: .important }
-La classe doit hériter de `ActiveRecord::Base` (ou d’une de ses sous-classes) et doit être statique 
-pour être appelée par Submit64.
+::: tip Note 
+La classe doit hériter de `ActiveRecord::Base` (ou d’une de ses sous-classes):::
+:::
+
 
 ```ruby
 class MonModele < ActiveRecord::Base
@@ -27,6 +28,6 @@ end
 <br /><br /> 
 
 
-{: .important }
-Consulter les [Définitions]({% link 090_definitions.md %}) pour connaître les attributs disponibles
-
+::: warning Important 
+Consulter la [Définition API](/api-definition/models.md#submit64_form_builder) pour connaître les attributs disponibles.
+:::

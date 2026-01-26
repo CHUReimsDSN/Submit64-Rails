@@ -34,6 +34,6 @@ class MonModele < ApplicationRecord
 end
 ```
 
-{: .important }
-Consulter les [Définitions]({% link 090_definitions.md %}) pour connaître les interventions possibles
-
+::: warning Important 
+Consulter la [Définition API](/api-definition/models.md#submit64_lifecycle_events) pour connaître les interventions possibles.
+:::

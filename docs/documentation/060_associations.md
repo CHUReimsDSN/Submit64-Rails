@@ -7,8 +7,9 @@ title: Associations
 Lors de la génération d'un champ d'association sur une autre table, il est possible de définir
 des logiques supplémentaires, comme l'affichage des données, les filtres, etc.
 
-{: .highlight }
-Les relations polymorphique ne sont actuellement pas pris en charge et donc ignorer
+::: warning Important 
+Les relations polymorphique ne sont actuellement pas pris en charge et donc ignorées
+:::
 
 
 ## Définir un champ de relation dans le formulaire  
@@ -73,12 +74,15 @@ end
 # )
 ```
 
-{: .note }
+::: tip Note 
 Si cette méthode n’est pas définie, Submit64 filtre automatiquement et si possible
 les colonnes `id` et `label`.
+:::
 
-{: .note }
+::: tip Note 
 Ces filtres s'appliquent **après** ceux définis par `submit64_association_filter_rows`.
+:::
+
 
 <br /><br /> 
 
@@ -98,8 +102,9 @@ class MonModele < ActiveRecord::Base
 end
 ```
 
-{: .note }
+::: tip Note 
 Si cette méthode n’est pas définie, Submit64 sélectionne automatiquement toutes les colonnes.
+:::
 
 <br /><br /> 
 
@@ -118,19 +123,26 @@ class MonModele < ActiveRecord::Base
 
 end
 ```
-{: .note }
+
+::: tip Note 
+Si cette méthode n’est pas définie, Submit64 sélectionne automatiquement toutes les colonnes.
 Cette méthode doit être en accord avec les colonnes définies dans
 `submit64_association_select_columns`. Si vous n'avez pas défini
 `submit64_association_select_columns`, toutes les colonnes seront alors disponibles.
+:::
 
-{: .note }
+::: tip Note 
 Cette méthode ne doit pas être statique.
+:::
 
-{: .note }
+::: tip Note 
 Si cette méthode n'est pas définie, Submit64 essaie les méthodes `label`, `id`, et 
 `primary_key`.
+:::
 
-{: .warning }
+
+::: warning Important 
 Cette méthode est appelée à chaque ligne éligible à l'association. 
 Il ne faut donc pas y mettre de code lourd ni effectuer de requêtes pour éviter des 
 problèmes de performances.
+:::

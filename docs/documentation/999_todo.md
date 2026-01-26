@@ -1,10 +1,5 @@
 ---
-title: TODO
+title: Todo
 ---
 
-# *TODO*
-
-- File updload
-- association create
-- Object edit (jsonb)
-- Polymorphic table, two fields, first is classname, second is rows
+# *Todo*

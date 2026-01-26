@@ -15,15 +15,15 @@ hero:
 
 features:
   - title: Génération automatique
-    details: Définition par interopérabilité interne ou externe
-    icon: ⚙️
-  - title: Système de règle
-    details: Restrictions applicatives sur l'ensemble du formulaire
-    icon: 🛡️
-  - title: Formulaire dynamique
-    details: Gestion de la logique à travers des événements
-    icon: 🛸
-  - title: Customisation
-    details: Surcharge de logique et composant
-    icon: 🧬
+    details: Définition des formulaires dans les modèles Active Record
+    icon: 🚀
+  - title: Cycle de vie
+    details: Interventions sur les différentes étapes applicatives
+    icon: 🛰️
+  - title: Association
+    details: Gestion des associations des modèles
+    icon: 🔥
+  - title: Pièces-jointes
+    details: Gestion des pièces-jointes des modèles
+    icon: 📎
 ---

@@ -28,9 +28,13 @@ def self.submit64_form_builder(resource_instance, context)
 end
 ```
 
-{: .warning }
+
+::: warning Important 
 Ne pas se baser sur le contexte pour définir des politiques de sécurité, 
 car celui-ci provient entièrement du client.
+:::
 
-{: .important }
-Consulter les [Définitions]({% link 090_definitions.md %}) pour savoir quelles méthodes reçoivent le contexte
+
+::: warning Important 
+Consulter la [Définition API](/api-definition/models.md) pour connaitre quelles méthodes reçoivent le contexte.
+:::

@@ -154,11 +154,7 @@ module Submit64
           raise Submit64Exception.new("Resource #{request_params[:resourceName]} with primary key '#{request_params[:resourceId]}' does not exist", 404)
         end
       end
-      bulk_mode = request_params[:bulkCount] != nil && request_params[:bulkCount].to_i > 0
       form = self.submit64_get_form(resource_instance, context)
-      if (!form[:allow_bulk] && bulk_mode) || (bulk_mode && edit_mode)
-        raise Submit64Exception.new("You are not allowed to submit bulk", 401)
-      end
       unlink_fields = {}
       form[:sections].each do |section|
         section[:fields].each_with_index do |field, field_index|
@@ -183,7 +179,7 @@ module Submit64
       end     
 
       # Start
-      on_submit_data = OnSubmitData.from(resource_instance, edit_mode, bulk_mode, request_params, form, unlink_fields)
+      on_submit_data = OnSubmitData.from(resource_instance, edit_mode, request_params, form, unlink_fields)
       submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_start], on_submit_data, context)
       success = false
       error_messages = {}
@@ -287,7 +283,6 @@ module Submit64
       end
 
       # Save
-      bulk_data = nil
       if skip_validation || resource_instance.valid?
         on_submit_data.resync(is_valid: true, resource_instance: resource_instance, error_messages: error_messages)
         submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_valid_before_save], on_submit_data, context)
@@ -302,25 +297,9 @@ module Submit64
         }
         resource_data_renew = submit64_get_form_metadata_and_data(params_for_form)
         form = resource_data_renew[:form]
-        if request_params[:bulkCount] != nil && request_params[:bulkCount].to_i > 1
-          bulk_data = [resource_data_renew[:resource_data]]
-          (request_params[:bulkCount].to_i - 1).times do
-            clone = self.new
-            clone.assign_attributes(request_params[:resourceData])
-            clone.save!(validate: false)
-            clone_data = resource_data_renew[:resource_data].deep_dup
-            clone_data[self.primary_key.to_s] = clone.method(self.primary_key.to_sym).call
-            bulk_data << clone_data
-          end
-          bulk_data = bulk_data
-        end
 
-        on_submit_data.resync(success: success, resource_id: resource_id, resource_instance: resource_instance, bulk_data: bulk_data, form: form)
-        if bulk_mode
-          submit64_try_lifecycle_callback(lifecycle_callbacks[:on_bulk_submit_success], on_submit_data, context)
-        else
-          submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_success], on_submit_data, context)
-        end
+        on_submit_data.resync(success: success, resource_id: resource_id, resource_instance: resource_instance, form: form)
+        submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_success], on_submit_data, context)
         
       else
         error_messages = resource_instance.errors.messages.deep_dup
@@ -329,18 +308,13 @@ module Submit64
           resource_data: nil
         }
         on_submit_data.resync(success: success, error_messages: error_messages)
-        if bulk_mode
-          submit64_try_lifecycle_callback(lifecycle_callbacks[:on_bulk_submit_fail], on_submit_data, context)
-        else
-          submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_fail], on_submit_data, context)
-        end
+        submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_fail], on_submit_data, context)
       end
       {
         success: success,
         resource_id: resource_id,
         form: form,
         resource_data: resource_data_renew[:resource_data],
-        bulk_data: bulk_data,
         errors: error_messages
       }
     end
@@ -1140,7 +1114,6 @@ module Submit64
         css_class: form_metadata[:css_class],
         resetable: form_metadata[:resetable],
         clearable: form_metadata[:clearable],
-        allow_bulk: form_metadata[:allow_bulk],
         readonly: form_metadata[:readonly],
     }
     end

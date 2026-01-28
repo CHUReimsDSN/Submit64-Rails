@@ -7,10 +7,12 @@
   },
   "devDependencies": {
     "@types/node": "^25.0.10",
+    "mermaid": "^11.12.2",
     "ts-morph": "^27.0.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
-    "vitepress": "^2.0.0-alpha.15"
+    "vitepress": "^2.0.0-alpha.15",
+    "vitepress-plugin-mermaid": "^2.0.17"
   },
   "type": "module"
 }

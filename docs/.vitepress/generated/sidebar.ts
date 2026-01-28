@@ -49,21 +49,6 @@ export const sidebar = {
           "items": []
         },
         {
-          "text": "Définition",
-          "link": "/documentation/090_definitions.md",
-          "items": []
-        },
-        {
-          "text": "Contribution",
-          "link": "/documentation/998_contribute.md",
-          "items": []
-        },
-        {
-          "text": "TODO",
-          "link": "/documentation/999_todo.md",
-          "items": []
-        },
-        {
           "text": "Exemples",
           "items": []
         }

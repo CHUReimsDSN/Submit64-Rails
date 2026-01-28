@@ -8,7 +8,7 @@ Lors de la génération d'un champ d'association sur une autre table, il est pos
 des logiques supplémentaires, comme l'affichage des données, les filtres, etc.
 
 ::: warning Important 
-Les relations polymorphique ne sont actuellement pas pris en charge et donc ignorées
+Les relations polymorphiques ne sont actuellement pas pris en charge et donc ignorées
 :::
 
 
@@ -143,6 +143,6 @@ Si cette méthode n'est pas définie, Submit64 essaie les méthodes `label`, `id
 
 ::: warning Important 
 Cette méthode est appelée à chaque ligne éligible à l'association. 
-Il ne faut donc pas y mettre de code lourd ni effectuer de requêtes pour éviter des 
-problèmes de performances.
+Il ne faut donc pas y mettre de code lourd ni effectuer de requête pour éviter des 
+problèmes de performance.
 :::

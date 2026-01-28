@@ -35,7 +35,7 @@ module Submit64
 
   def self.ensure_params_and_resource_are_valid(params)
     if !params[:submit64Params]
-      raise Submit64Exception.new("Invalid params", 400)
+      raise Submit64Exception.new("Invalid params, missing 'submit64params' key", 400)
     end
     resource_name = params[:submit64Params][:resourceName]
     begin

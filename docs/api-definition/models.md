@@ -66,6 +66,7 @@ type SectionHash = {
 type FieldHash = {
 
   # Cible du champ, une colonne en base, le nom d'une relation ou le nom d'une pièce jointe
+  # /!\ Doit être unique, partagé avec les :unlink_target
   target: Symbol
 
   # Libellé du champ
@@ -98,6 +99,7 @@ type FieldHash = {
   extra_type: 'color' | 'wysiwyg'
 
   # Cible arbitraire délié du model
+  # /!\ Doit être unique, partagé avec les :target
   unlink_target: Symbol
 
   # Type du champ délié

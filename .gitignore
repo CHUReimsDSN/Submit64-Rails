@@ -12,5 +12,5 @@
 /.sass-cache/
 /_site/
 node_modules
-.docs/.vitepress/dist
-.docs/.vitepress/cache
+/docs/.vitepress/dist
+/docs/.vitepress/cache

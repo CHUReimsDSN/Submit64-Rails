@@ -66,11 +66,11 @@ module Submit64
       from_class = self.to_s
       association_class = association.klass
       default_limit = Submit64.get_association_data_pagination_limit
-      limit = request_params[:limit] || default_limit
+      limit = request_params[:limit].to_i || default_limit
       if limit > default_limit
         limit = default_limit
       end
-      offset = request_params[:offset] || 0
+      offset = request_params[:offset].to_i || 0
       on_association_data = OnAssociationData.from(limit, offset, from_class, association_class)
       submit64_try_lifecycle_callback(lifecycle_callbacks[:on_get_association_start], on_association_data, context)
 
@@ -187,39 +187,41 @@ module Submit64
 
       # Compute attachments
       attachments = {}
-      all_attachments = self.reflect_on_all_attachments.map do |attachment|
-        type = submit64_get_form_field_type_by_attachment(attachment)
-        {
-          name: attachment.name,
-          type: type,
-        }
-      end
-      request_params[:resourceData].each do |key, value|
-        attachment_found = all_attachments.find do |attachment_find|
-          attachment_find[:name] == key.to_sym
+      if self.respond_to?(:reflect_on_all_attachments)
+        all_attachments = self.reflect_on_all_attachments.map do |attachment|
+          type = submit64_get_form_field_type_by_attachment(attachment)
+          {
+            name: attachment.name,
+            type: type,
+          }
         end
-        if attachment_found.nil?
-          next
-        end
-        base64_attachments = value["add"].map do |file_pending|
-          base64_to_uploaded_file(file_pending["base64"], file_pending["filename"])
-        end
-        attachments[key] = request_params[:resourceData][key]
-        attachments[key]["type"] = attachment_found[:type]
-        if attachment_found[:type] == "attachmentHasOne"
-          request_params[:resourceData][key] = base64_attachments.first
-        else
-          attachments_signed_ids_to_keep = []
-          all_attachments_already_there = resource_instance.public_send(key).attachments.includes(:blob)
-          all_attachments_already_there.each do |attachment_there_each|
-            if value["delete"].exclude?(attachment_there_each.id)
-              attachments_signed_ids_to_keep << attachment_there_each.signed_id
-            end
+        request_params[:resourceData].each do |key, value|
+          attachment_found = all_attachments.find do |attachment_find|
+            attachment_find[:name] == key.to_sym
           end
-          request_params[:resourceData][key] = base64_attachments + attachments_signed_ids_to_keep
+          if attachment_found.nil?
+            next
+          end
+          base64_attachments = value["add"].map do |file_pending|
+            base64_to_uploaded_file(file_pending["base64"], file_pending["filename"])
+          end
+          attachments[key] = request_params[:resourceData][key]
+          attachments[key]["type"] = attachment_found[:type]
+          if attachment_found[:type] == "attachmentHasOne"
+            request_params[:resourceData][key] = base64_attachments.first
+          else
+            attachments_signed_ids_to_keep = []
+            all_attachments_already_there = resource_instance.public_send(key).attachments.includes(:blob)
+            all_attachments_already_there.each do |attachment_there_each|
+              if value["delete"].exclude?(attachment_there_each.id)
+                attachments_signed_ids_to_keep << attachment_there_each.signed_id
+              end
+            end
+            request_params[:resourceData][key] = base64_attachments + attachments_signed_ids_to_keep
+          end
         end
       end
-      
+
       # Compute row ids from association to instance
       all_associations = self.reflect_on_all_associations.filter do |association|
         association.options[:polymorphic] != true
@@ -965,13 +967,12 @@ module Submit64
 
     def submit64_get_form(resource_instance, context)
       # First structuration
+      if !self.respond_to?(:submit64_form_builder)
+        raise Submit64Exception.new("Method 'submit64_form_builder' must be defined in the #{self.to_s} model", 400)
+      end
       default_form_metadata = self.submit64_get_default_form
       form_metadata = submit64_try_object_method_with_args(self, :submit64_form_builder, resource_instance, context)
-      if form_metadata.nil?
-        form_metadata = default_form_metadata
-      else
-        form_metadata = default_form_metadata.merge(form_metadata)
-      end
+      form_metadata = default_form_metadata.merge(form_metadata)
 
       # Early projection for lazy definition
       form_metadata[:sections].each do |section_each|

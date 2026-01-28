@@ -1,9 +1,9 @@
-import { defineConfig } from 'vitepress'
 import { sidebar } from './generated/sidebar'
 import { version } from './generated/version'
+import { withMermaid } from 'vitepress-plugin-mermaid';
 
 // https://vitepress.dev/reference/site-config
-export default defineConfig({
+export default withMermaid({
   title: "Submit64 - Rails",
   description: "Submit64 for Rails",
   base: '/Submit64-Rails/',
@@ -14,7 +14,10 @@ export default defineConfig({
       { text: version, link: 'changelog' },
       { text: 'Submit64 - Vue', link: 'https://chureimsdsn.github.io/Submit64-Vue/' }
     ],
-
+    mermaid: {},
+    MermaidPlugin: {
+      class: 'mermaid mermaid-doc'
+    },
     sidebar,
     outlineTitle: 'Sur cette page',
     socialLinks: [

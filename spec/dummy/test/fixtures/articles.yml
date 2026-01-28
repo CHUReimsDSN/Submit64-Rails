@@ -1,0 +1,6 @@
+one: 
+  a_string: "hello"
+  a_text: "hello text"
+  a_number: 1000
+  a_float: 3.14
+  user: two

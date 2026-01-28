@@ -12,12 +12,24 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+
+      - name: Install test depedencies and run tests
+        run: |
+          cd spec/dummy
+          bundle install
+          rails test
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '24.13.0'
 
-      - name: Install dependencies and build docs
+      - name: Install doc dependencies and build docs
         run: |
           cd docs
           npm install

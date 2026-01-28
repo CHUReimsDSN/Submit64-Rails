@@ -66,11 +66,11 @@ module Submit64
       from_class = self.to_s
       association_class = association.klass
       default_limit = Submit64.get_association_data_pagination_limit
-      limit = request_params[:limit] || default_limit
+      limit = request_params[:limit].to_i || default_limit
       if limit > default_limit
         limit = default_limit
       end
-      offset = request_params[:offset] || 0
+      offset = request_params[:offset].to_i || 0
       on_association_data = OnAssociationData.from(limit, offset, from_class, association_class)
       submit64_try_lifecycle_callback(lifecycle_callbacks[:on_get_association_start], on_association_data, context)
 
@@ -154,11 +154,7 @@ module Submit64
           raise Submit64Exception.new("Resource #{request_params[:resourceName]} with primary key '#{request_params[:resourceId]}' does not exist", 404)
         end
       end
-      bulk_mode = request_params[:bulkCount] != nil && request_params[:bulkCount].to_i > 0
       form = self.submit64_get_form(resource_instance, context)
-      if (!form[:allow_bulk] && bulk_mode) || (bulk_mode && edit_mode)
-        raise Submit64Exception.new("You are not allowed to submit bulk", 401)
-      end
       unlink_fields = {}
       form[:sections].each do |section|
         section[:fields].each_with_index do |field, field_index|
@@ -183,7 +179,7 @@ module Submit64
       end     
 
       # Start
-      on_submit_data = OnSubmitData.from(resource_instance, edit_mode, bulk_mode, request_params, form, unlink_fields)
+      on_submit_data = OnSubmitData.from(resource_instance, edit_mode, request_params, form, unlink_fields)
       submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_start], on_submit_data, context)
       success = false
       error_messages = {}
@@ -191,39 +187,41 @@ module Submit64
 
       # Compute attachments
       attachments = {}
-      all_attachments = self.reflect_on_all_attachments.map do |attachment|
-        type = submit64_get_form_field_type_by_attachment(attachment)
-        {
-          name: attachment.name,
-          type: type,
-        }
-      end
-      request_params[:resourceData].each do |key, value|
-        attachment_found = all_attachments.find do |attachment_find|
-          attachment_find[:name] == key.to_sym
+      if self.respond_to?(:reflect_on_all_attachments)
+        all_attachments = self.reflect_on_all_attachments.map do |attachment|
+          type = submit64_get_form_field_type_by_attachment(attachment)
+          {
+            name: attachment.name,
+            type: type,
+          }
         end
-        if attachment_found.nil?
-          next
-        end
-        base64_attachments = value["add"].map do |file_pending|
-          base64_to_uploaded_file(file_pending["base64"], file_pending["filename"])
-        end
-        attachments[key] = request_params[:resourceData][key]
-        attachments[key]["type"] = attachment_found[:type]
-        if attachment_found[:type] == "attachmentHasOne"
-          request_params[:resourceData][key] = base64_attachments.first
-        else
-          attachments_signed_ids_to_keep = []
-          all_attachments_already_there = resource_instance.public_send(key).attachments.includes(:blob)
-          all_attachments_already_there.each do |attachment_there_each|
-            if value["delete"].exclude?(attachment_there_each.id)
-              attachments_signed_ids_to_keep << attachment_there_each.signed_id
-            end
+        request_params[:resourceData].each do |key, value|
+          attachment_found = all_attachments.find do |attachment_find|
+            attachment_find[:name] == key.to_sym
           end
-          request_params[:resourceData][key] = base64_attachments + attachments_signed_ids_to_keep
+          if attachment_found.nil?
+            next
+          end
+          base64_attachments = value["add"].map do |file_pending|
+            base64_to_uploaded_file(file_pending["base64"], file_pending["filename"])
+          end
+          attachments[key] = request_params[:resourceData][key]
+          attachments[key]["type"] = attachment_found[:type]
+          if attachment_found[:type] == "attachmentHasOne"
+            request_params[:resourceData][key] = base64_attachments.first
+          else
+            attachments_signed_ids_to_keep = []
+            all_attachments_already_there = resource_instance.public_send(key).attachments.includes(:blob)
+            all_attachments_already_there.each do |attachment_there_each|
+              if value["delete"].exclude?(attachment_there_each.id)
+                attachments_signed_ids_to_keep << attachment_there_each.signed_id
+              end
+            end
+            request_params[:resourceData][key] = base64_attachments + attachments_signed_ids_to_keep
+          end
         end
       end
-      
+
       # Compute row ids from association to instance
       all_associations = self.reflect_on_all_associations.filter do |association|
         association.options[:polymorphic] != true
@@ -287,7 +285,6 @@ module Submit64
       end
 
       # Save
-      bulk_data = nil
       if skip_validation || resource_instance.valid?
         on_submit_data.resync(is_valid: true, resource_instance: resource_instance, error_messages: error_messages)
         submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_valid_before_save], on_submit_data, context)
@@ -302,25 +299,9 @@ module Submit64
         }
         resource_data_renew = submit64_get_form_metadata_and_data(params_for_form)
         form = resource_data_renew[:form]
-        if request_params[:bulkCount] != nil && request_params[:bulkCount].to_i > 1
-          bulk_data = [resource_data_renew[:resource_data]]
-          (request_params[:bulkCount].to_i - 1).times do
-            clone = self.new
-            clone.assign_attributes(request_params[:resourceData])
-            clone.save!(validate: false)
-            clone_data = resource_data_renew[:resource_data].deep_dup
-            clone_data[self.primary_key.to_s] = clone.method(self.primary_key.to_sym).call
-            bulk_data << clone_data
-          end
-          bulk_data = bulk_data
-        end
 
-        on_submit_data.resync(success: success, resource_id: resource_id, resource_instance: resource_instance, bulk_data: bulk_data, form: form)
-        if bulk_mode
-          submit64_try_lifecycle_callback(lifecycle_callbacks[:on_bulk_submit_success], on_submit_data, context)
-        else
-          submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_success], on_submit_data, context)
-        end
+        on_submit_data.resync(success: success, resource_id: resource_id, resource_instance: resource_instance, form: form)
+        submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_success], on_submit_data, context)
         
       else
         error_messages = resource_instance.errors.messages.deep_dup
@@ -329,18 +310,13 @@ module Submit64
           resource_data: nil
         }
         on_submit_data.resync(success: success, error_messages: error_messages)
-        if bulk_mode
-          submit64_try_lifecycle_callback(lifecycle_callbacks[:on_bulk_submit_fail], on_submit_data, context)
-        else
-          submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_fail], on_submit_data, context)
-        end
+        submit64_try_lifecycle_callback(lifecycle_callbacks[:on_submit_fail], on_submit_data, context)
       end
       {
         success: success,
         resource_id: resource_id,
         form: form,
         resource_data: resource_data_renew[:resource_data],
-        bulk_data: bulk_data,
         errors: error_messages
       }
     end
@@ -991,13 +967,12 @@ module Submit64
 
     def submit64_get_form(resource_instance, context)
       # First structuration
+      if !self.respond_to?(:submit64_form_builder)
+        raise Submit64Exception.new("Method 'submit64_form_builder' must be defined in the #{self.to_s} model", 400)
+      end
       default_form_metadata = self.submit64_get_default_form
       form_metadata = submit64_try_object_method_with_args(self, :submit64_form_builder, resource_instance, context)
-      if form_metadata.nil?
-        form_metadata = default_form_metadata
-      else
-        form_metadata = default_form_metadata.merge(form_metadata)
-      end
+      form_metadata = default_form_metadata.merge(form_metadata)
 
       # Early projection for lazy definition
       form_metadata[:sections].each do |section_each|
@@ -1140,7 +1115,6 @@ module Submit64
         css_class: form_metadata[:css_class],
         resetable: form_metadata[:resetable],
         clearable: form_metadata[:clearable],
-        allow_bulk: form_metadata[:allow_bulk],
         readonly: form_metadata[:readonly],
     }
     end

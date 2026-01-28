@@ -39,10 +39,6 @@ type FormHash = {
 
   # Formulaire en lecture seule
   readonly: Boolean = false
-
-  # Autorise la création de masse
-  # WARNING : La création de masse n'applique les validations que sur le premier enregistrement
-  allow_bulk: Boolean = false
 }
 
 type SectionHash = {
@@ -70,6 +66,7 @@ type SectionHash = {
 type FieldHash = {
 
   # Cible du champ, une colonne en base, le nom d'une relation ou le nom d'une pièce jointe
+  # /!\ Doit être unique, partagé avec les :unlink_target
   target: Symbol
 
   # Libellé du champ
@@ -102,6 +99,7 @@ type FieldHash = {
   extra_type: 'color' | 'wysiwyg'
 
   # Cible arbitraire délié du model
+  # /!\ Doit être unique, partagé avec les :target
   unlink_target: Symbol
 
   # Type du champ délié
@@ -196,9 +194,7 @@ type LifeCycles = {
   on_submit_before_assignation?: (on_submit_data, Context) -> nil,
   on_submit_valid_before_save?: (on_submit_data, Context) -> nil,
   on_submit_success?: (on_submit_data, Context) -> nil,
-  on_bulk_submit_success?: (on_submit_data, Context) -> nil,
   on_submit_fail?: (on_submit_data, Context) -> nil,
-  on_bulk_submit_fail?: (on_submit_data, Context) -> nil,
 }
 ```
 

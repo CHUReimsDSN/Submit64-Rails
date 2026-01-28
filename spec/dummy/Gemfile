@@ -45,4 +45,4 @@ group :development, :test do
   gem "rubocop-rails-omakase", require: false
 end
 
-gem 'submit64', git: 'https://github.com/CHUReimsDSN/Submit64-Rails.git', branch: 'dev'
+gem 'submit64', path: '../../'

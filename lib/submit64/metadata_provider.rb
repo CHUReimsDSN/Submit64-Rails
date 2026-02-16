@@ -507,9 +507,9 @@ module Submit64
               }
               custom_display_value = submit64_try_object_method_with_args(row, :submit64_association_label, from_class, context)
               if custom_display_value != nil
-                entry[:label] = custom_display_value
+                association_data[:label] = custom_display_value
               else
-                entry[:label] = submit64_association_default_label(row)
+                association_data[:label] = submit64_association_default_label(row)
               end
               default_value = row[association_class.primary_key]
               field[:field_association_data] = [association_data]

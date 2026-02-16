@@ -502,33 +502,34 @@ module Submit64
                 next
               end
               association_data = {
-                label: [],
-                data: [row]
+                label: nil,
+                data: row
               }
               custom_display_value = submit64_try_object_method_with_args(row, :submit64_association_label, from_class, context)
               if custom_display_value != nil
-                association_data[:label] << custom_display_value
+                entry[:label] = custom_display_value
               else
-                association_data[:label] << submit64_association_default_label(row)
+                entry[:label] = submit64_association_default_label(row)
               end
               default_value = row[association_class.primary_key]
-              field[:field_association_data] = association_data
+              field[:field_association_data] = [association_data]
             elsif field[:field_type] == 'selectHasMany' || field[:field_type] == 'selectHasAndBelongsToMany'
               rows = builder_rows
-              association_data = {
-                label: [],
-                data: []
-              }
+              association_data = []
               default_value = []
               rows.each do |row|
+                association_data_entry = {
+                  label: nil,
+                  data: row
+                }
                 custom_display_value = submit64_try_object_method_with_args(row, :submit64_association_label, from_class, context)
                 if custom_display_value != nil
-                  association_data[:label] << custom_display_value
+                  association_data_entry[:label] = custom_display_value
                 else
-                  association_data[:label] << submit64_association_default_label(row)
+                  association_data_entry[:label] = submit64_association_default_label(row)
                 end
-                association_data[:data] << row
                 default_value << row[association_class.primary_key]
+                association_data << association_data_entry
               end
               field[:field_association_data] = association_data
             end

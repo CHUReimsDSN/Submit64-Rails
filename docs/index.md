@@ -20,7 +20,7 @@ features:
   - title: Cycle de vie
     details: Interventions sur les différentes étapes applicatives
     icon: 🛰️
-  - title: Association
+  - title: Associations
     details: Gestion des associations des modèles
     icon: 🔥
   - title: Pièces-jointes

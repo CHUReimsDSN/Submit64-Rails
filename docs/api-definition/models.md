@@ -98,6 +98,10 @@ type FieldHash = {
   # Type supplémentaire
   extra_type: 'color' | 'wysiwyg'
 
+  # Défini une liste de value à sélectionner arbitraire
+  # Automatiquement généré pour les énumérations
+  select_options: Array[String] | Hash[String, untype]
+
   # Cible arbitraire délié du model
   # /!\ Doit être unique, partagé avec les :target
   unlink_target: Symbol
@@ -196,8 +200,6 @@ type LifeCycles = {
   on_submit_success?: (on_submit_data, Context) -> nil,
   on_submit_fail?: (on_submit_data, Context) -> nil,
 }
-
-type 
 ```
 
 <br /><br />

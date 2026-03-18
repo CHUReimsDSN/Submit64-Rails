@@ -19,7 +19,7 @@ class MonModele < ActiveRecord::Base
       sections: [
         fields: [
           {
-            target: :content, :extra_type: :wysiwyg
+            target: :content, extra_type: :wysiwyg
           }
         ]
       ]

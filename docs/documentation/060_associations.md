@@ -12,7 +12,7 @@ Les relations polymorphiques ne sont actuellement pas pris en charge et donc ign
 :::
 
 
-## Définir un champ de relation dans le formulaire  
+## Champ de relation dans le formulaire  
 
 ```ruby
 class MonModele < ActiveRecord::Base
@@ -32,7 +32,7 @@ end
 <br /><br /> 
 
 
-## Définir les lignes à séléctionnées
+## Lignes à séléctionnées
 
 Cette méthode permet de définir des filtres sur les lignes de l'association.
 ```ruby
@@ -49,7 +49,7 @@ end
 <br /><br /> 
 
 
-## Définir les colonnes à filtrées (pour la recherche)
+## Colonnes à filtrées (pour la recherche)
 
 Cette méthode permet de définir sur quelles colonnes le filtre de recherche côté client agit.
 Chaque colonne définie sera évalué indépendamment des autres.
@@ -86,7 +86,7 @@ Ces filtres s'appliquent **après** ceux définis par `submit64_association_filt
 
 <br /><br /> 
 
-## Définir les colonnes à séléctionnées (pour la recherche)
+## Colonnes à séléctionnées (pour la recherche)
 
 La méthode `submit64_association_select_columns` permet d'éviter de sélectionner l'entièreté de
 la ligne en base et de définir une liste arbitraire de colonnes.
@@ -108,7 +108,7 @@ Si cette méthode n’est pas définie, Submit64 sélectionne automatiquement to
 
 <br /><br /> 
 
-## Définir un libellé
+## Libellé
 
 Lors de la sélection d'une association côté client, la liste affiche un libellé pouvant
 être surchargée coté serveur.
@@ -125,10 +125,8 @@ end
 ```
 
 ::: tip Note 
-Si cette méthode n’est pas définie, Submit64 sélectionne automatiquement toutes les colonnes.
-Cette méthode doit être en accord avec les colonnes définies dans
-`submit64_association_select_columns`. Si vous n'avez pas défini
-`submit64_association_select_columns`, toutes les colonnes seront alors disponibles.
+Cette méthode doit être accordée avec les colonnes définies dans
+`submit64_association_select_columns`.
 :::
 
 ::: tip Note 
@@ -137,7 +135,7 @@ Cette méthode ne doit pas être statique.
 
 ::: tip Note 
 Si cette méthode n'est pas définie, Submit64 essaie les méthodes `label`, `id`, et 
-`primary_key`.
+`primary_key` dans cet ordre.
 :::
 
 

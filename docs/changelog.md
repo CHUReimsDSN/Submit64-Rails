@@ -4,6 +4,10 @@ title: Changelog
 
 # Changelog
 
+## 1.3.3
+
+- Correction de la valeur par défault pour les énumurations et liste de valeur
+
 ## 1.3.2
 
 - Correction des données d'association pour les valeurs par défaut

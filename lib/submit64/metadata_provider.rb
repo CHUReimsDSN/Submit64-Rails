@@ -477,7 +477,7 @@ module Submit64
             default_value = field[:default_value].to_s
           when 'datetime'
             default_value = field[:default_value].to_s            
-          when 'selectString'
+          when 'select'
             default_value = field[:default_value].to_s
           when 'selectBelongsTo', 'selectHasMany', 'selectHasOne', 'selectHasAndBelongsToMany'
             association_class = field[:field_association_class]
@@ -1117,7 +1117,7 @@ module Submit64
         resetable: form_metadata[:resetable],
         clearable: form_metadata[:clearable],
         readonly: form_metadata[:readonly],
-    }
+      }
     end
 
     def submit64_get_form_for_interop(resource_instance, context)

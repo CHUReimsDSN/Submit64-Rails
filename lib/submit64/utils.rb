@@ -16,6 +16,7 @@ module Submit64
         :resourceName,
         :resourceId,
         :associationName,
+        :associationClassname,
         :labelFilter,
         :limit,
         :offset,

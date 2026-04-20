@@ -57,9 +57,6 @@ type SectionHash = {
 
   # Classe css sur la section
   css_class: String = ''
-
-  # Callback qui définit si la section doit être générée ou non
-  statement: () -> Boolean = nil
 }
 
 
@@ -87,9 +84,6 @@ type FieldHash = {
   # Classe css sur le champ
   css_class: String = nil
 
-  # Callback qui défini si le champ doit être généré (et pris en compte à la soumission) ou non
-  statement: () -> Boolean = nil
-
   # Valeur par défaut du champ pour le mode création
   # Pour les associations belongs_to, il faut donner la valeur de la clé étrangère
   # Pour les associations has_many, il faut donner les valeurs des clés primaires du modèle d'association
@@ -103,25 +97,33 @@ type FieldHash = {
   select_options: Array[String] | Hash[String, untype]
 
   # Cible arbitraire délié du model
-  # /!\ Doit être unique, partagé avec les :target
-  unlink_target: Symbol
+  unlink: UnlinkHash
+}
+
+
+type UnlinkHash = {
+
+  # /!\ Identifiant unique, partagé avec les clés :target
+  name: Symbol
 
   # Type du champ délié
-  # Nécessite l'attribut unlink à true
-  unlink_type: "string"
-              | "text"
-              | "date"
-              | "datetime"
-              | "select"
-              | "selectBelongsTo"
-              | "selectHasMany"
-              | "selectHasOne"
-              | "selectHasAndBelongsToMany"
-              | "checkbox"
-              | "number"
-              | "object"
-              | "attachmentHasOne"
-              | "attachmentHasMany" = "string"
+  type: "string"
+        | "text"
+        | "date"
+        | "datetime"
+        | "select"
+        | "selectBelongsTo"
+        | "selectHasMany"
+        | "selectHasOne"
+        | "selectHasAndBelongsToMany"
+        | "checkbox"
+        | "number"
+        | "object"
+        | "attachmentHasOne"
+        | "attachmentHasMany" = "string"
+
+  # Nom de la classe du modèle pour déterminer les types selectBelongsTo, selectHasMany, selectHasOne et selectHasAndBelongsToMany
+  association_class: String = nil
 }
 ```
 

@@ -977,8 +977,6 @@ module Submit64
         backend_datetime_format: 'YYYY-MM-DDTHH:mm:ss.SSSZ',
         resource_name: self.to_s,
         css_class: '',
-        resetable: true,
-        clearable: true
       }
     end
 
@@ -1020,7 +1018,7 @@ module Submit64
               end
             end
           else
-            if field[:unlink][:name].nil?
+            if field[:unlink].nil? || field[:unlink][:name].nil?
               field_index_to_purge << index_field
             end
           end
@@ -1037,7 +1035,7 @@ module Submit64
       form_metadata[:sections] = form_metadata[:sections].map do |section_map|
         fields = section_map[:fields].map do |field_map|
           unlink_data = field_map[:unlink]
-          if unlink_data
+          if unlink_data != nil
             form_select_options = self.submit64_get_column_select_options(field_map)
             form_field_type = unlink_data[:type]
             form_rules = [] # TODO test validation sans column
@@ -1088,9 +1086,6 @@ module Submit64
             label: label,
             field_association_name: field_association_name,
             field_association_class: field_association_class,
-            hint: field_map[:hint],
-            prefix: field_map[:prefix],
-            suffix: field_map[:suffix],
             readonly: field_map[:readonly],
             rules: form_rules,
             static_select_options: form_select_options,
@@ -1117,8 +1112,6 @@ module Submit64
         backend_date_format: form_metadata[:backend_date_format],
         backend_datetime_format: form_metadata[:backend_datetime_format],
         css_class: form_metadata[:css_class],
-        resetable: form_metadata[:resetable],
-        clearable: form_metadata[:clearable],
         readonly: form_metadata[:readonly],
       }
     end

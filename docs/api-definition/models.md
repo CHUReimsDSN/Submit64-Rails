@@ -31,12 +31,6 @@ type FormHash = {
   # Classe css sur le container du formulaire
   css_class: String = ""
 
-  # Permet de réinitialiser les valeurs du formulaire côté client
-  resetable: Boolean = false
-
-  # Permet de supprimer les valeurs du formulaire côté client
-  clearable: Boolean = false
-
   # Formulaire en lecture seule
   readonly: Boolean = false
 }
@@ -68,15 +62,6 @@ type FieldHash = {
 
   # Libellé du champ
   label: String = nil
-
-  # Indice du champ
-  hint: String = nil
-
-  # Prefix du champ
-  prefix: String = nil
-
-  # Suffix du champ
-  suffix: String = nil
 
   # Champ en lecture seule
   readonly: Boolean = false

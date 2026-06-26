@@ -4,10 +4,16 @@ require "tempfile"
 module Submit64
 
   module MetadataProvider
+    attr_reader :submit64_method_injector
+
     def self.extended(base)
       unless base < ActiveRecord::Base
         raise Submit64Exception.new("#{base} must inherit from ActiveRecord::Base to extend Submit64::MetadataProvider", 400)
       end
+    end
+
+    def submit64_set_method_injector(injector)
+      @submit64_method_injector = injector
     end
 
     def submit64_get_form_metadata_and_data(request_params)
@@ -20,7 +26,7 @@ module Submit64
       else
         context = {}
       end
-      lifecycle_callbacks = submit64_try_object_method_with_args(self, :submit64_lifecycle_events, context) || {}
+      lifecycle_callbacks = submit64_try_object_method_with_args(self, @submit64_method_injector.lifecycle_events, context) || {}
       on_metadata_data = OnMetadataData.from
       submit64_try_lifecycle_callback(lifecycle_callbacks[:on_metadata_start], on_metadata_data, context)
 
@@ -34,7 +40,7 @@ module Submit64
       end
 
       if !resource_instance.nil?
-        resource_data, form_metadata = submit64_get_resource_data(resource_instance, form_metadata, request_params, context)
+        resource_data, form_metadata = submit64_get_resource_data(resource_instance, form_metadata, context)
       else
         resource_data, form_metadata = submit64_get_default_value_form(form_metadata, context)
       end
@@ -58,7 +64,7 @@ module Submit64
       else
         context = {}
       end
-      lifecycle_callbacks = submit64_try_object_method_with_args(self, :submit64_lifecycle_events, context) || {}
+      lifecycle_callbacks = submit64_try_object_method_with_args(self, @submit64_method_injector.lifecycle_events, context) || {}
 
       unlink_mode = request_params[:associationClassname] && request_params[:associationName].nil?
       from_class = self.to_s
@@ -86,20 +92,20 @@ module Submit64
       on_association_data = OnAssociationData.from(limit, offset, from_class, association_class)
       submit64_try_lifecycle_callback(lifecycle_callbacks[:on_get_association_start], on_association_data, context)
 
-      custom_select_column = submit64_try_object_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
+      custom_select_column = submit64_try_object_method_with_args(association_class, @submit64_method_injector.association_select_columns, from_class, context)
       if custom_select_column != nil
         builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym]).all
       else
         builder_rows = association_class.all
       end
-      custom_builder_row_filter = submit64_try_object_method_with_args(association_class, :submit64_association_filter_rows, from_class, context)
+      custom_builder_row_filter = submit64_try_object_method_with_args(association_class, @submit64_method_injector.association_filter_rows, from_class, context)
       if custom_builder_row_filter != nil
         builder_rows = builder_rows.and(custom_builder_row_filter)
       end
       label_filter = request_params[:labelFilter]
       if !label_filter.empty? || label_filter.nil?
         columns_filter = [:label, :id]
-        custom_columns_filter = submit64_try_object_method_with_args(association_class, :submit64_association_filter_columns, from_class, context)
+        custom_columns_filter = submit64_try_object_method_with_args(association_class, @submit64_method_injector.association_filter_columns, from_class, context)
         if custom_columns_filter != nil
           columns_filter = custom_columns_filter
         end
@@ -125,7 +131,7 @@ module Submit64
       builder_row_count = builder_rows.reselect(association_class.primary_key.to_sym).count
       builder_rows = builder_rows.limit(limit).offset(offset).map do |row|
         label = ""
-        custom_label = submit64_try_object_method_with_args(row, :submit64_association_label, from_class, context)
+        custom_label = submit64_try_object_method_with_args(row, @submit64_method_injector.association_label, from_class, context)
         if custom_label != nil
           label = custom_label
         else
@@ -155,7 +161,7 @@ module Submit64
       else
         context = {}
       end
-      lifecycle_callbacks = submit64_try_object_method_with_args(self, :submit64_lifecycle_events, context) || {}
+      lifecycle_callbacks = submit64_try_object_method_with_args(self, @submit64_method_injector.lifecycle_events, context) || {}
       edit_mode = !request_params[:resourceId].nil? && request_params[:resourceId] != ""
       if !edit_mode
         resource_instance = self.new
@@ -253,13 +259,13 @@ module Submit64
         end
         association_class = association_found[:klass]
         from_class = self.to_s
-        custom_select_column = submit64_try_object_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
+        custom_select_column = submit64_try_object_method_with_args(association_class, @submit64_method_injector.association_select_columns, from_class, context)
         if custom_select_column != nil
           builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym]).all
         else
           builder_rows = association_class.all
         end
-        custom_builder_row_filter = submit64_try_object_method_with_args(association_class, :submit64_association_filter_rows, from_class, context)
+        custom_builder_row_filter = submit64_try_object_method_with_args(association_class, @submit64_method_injector.association_filter_rows, from_class, context)
         if custom_builder_row_filter != nil
           builder_rows = builder_rows.and(custom_builder_row_filter)
         end
@@ -332,7 +338,7 @@ module Submit64
     end
 
     private
-    def submit64_get_resource_data(resource_instance, form_metadata, request_params, context)
+    def submit64_get_resource_data(resource_instance, form_metadata, context)
       from_class = self.to_s
       columns_to_select = [self.primary_key.to_sym]
       unlink_default_values = {}
@@ -367,8 +373,8 @@ module Submit64
           if (field[:field_association_name] != nil)
             association_class = field[:field_association_class]
             relation = self.reflect_on_association(field[:field_association_name])
-            custom_select_column = submit64_try_object_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
-            custom_builder_row_filter = submit64_try_object_method_with_args(association_class, :submit64_association_filter_rows, from_class, context)
+            custom_select_column = submit64_try_object_method_with_args(association_class, @submit64_method_injector.association_select_columns, from_class, context)
+            custom_builder_row_filter = submit64_try_object_method_with_args(association_class, @submit64_method_injector.association_filter_rows, from_class, context)
             case field[:field_type]
               when "selectBelongsTo", "selectHasOne"
                 if custom_select_column != nil
@@ -391,7 +397,7 @@ module Submit64
                   label: nil,
                   data: row
                 }
-                custom_display_value = submit64_try_object_method_with_args(row, :submit64_association_label, from_class, context)
+                custom_display_value = submit64_try_object_method_with_args(row, @submit64_method_injector.association_label, from_class, context)
                 if custom_display_value != nil
                   association_data[:label] = custom_display_value
                 else
@@ -415,7 +421,7 @@ module Submit64
                     label: nil,
                     data: nil
                   }
-                  custom_display_value = submit64_try_object_method_with_args(row, :submit64_association_label, from_class, context)
+                  custom_display_value = submit64_try_object_method_with_args(row, @submit64_method_injector.association_label, from_class, context)
                   if custom_display_value != nil
                     association_data_entry[:label] = custom_display_value
                   else
@@ -501,13 +507,13 @@ module Submit64
         default_value = field[:default_value].to_s
       when 'selectBelongsTo', 'selectHasMany', 'selectHasOne', 'selectHasAndBelongsToMany'
         association_class = field[:field_association_class]
-        custom_select_column = submit64_try_object_method_with_args(association_class, :submit64_association_select_columns, from_class, context)
+        custom_select_column = submit64_try_object_method_with_args(association_class, @submit64_method_injector.association_select_columns, from_class, context)
         if custom_select_column != nil
           builder_rows = association_class.select([*custom_select_column, association_class.primary_key.to_sym]).all
         else
           builder_rows = association_class.all
         end
-        custom_builder_row_filter = submit64_try_object_method_with_args(association_class, :submit64_association_filter_rows, from_class, context)
+        custom_builder_row_filter = submit64_try_object_method_with_args(association_class, @submit64_method_injector.association_filter_rows, from_class, context)
         if custom_builder_row_filter != nil
           builder_rows = builder_rows.and(custom_builder_row_filter)
         end
@@ -525,7 +531,7 @@ module Submit64
             label: nil,
             data: row
           }
-          custom_display_value = submit64_try_object_method_with_args(row, :submit64_association_label, from_class, context)
+          custom_display_value = submit64_try_object_method_with_args(row, @submit64_method_injector.association_label, from_class, context)
           if custom_display_value != nil
             association_data[:label] = custom_display_value
           else
@@ -542,7 +548,7 @@ module Submit64
               label: nil,
               data: row
             }
-            custom_display_value = submit64_try_object_method_with_args(row, :submit64_association_label, from_class, context)
+            custom_display_value = submit64_try_object_method_with_args(row, @submit64_method_injector.association_label, from_class, context)
             if custom_display_value != nil
               association_data_entry[:label] = custom_display_value
             else
@@ -982,11 +988,11 @@ module Submit64
 
     def submit64_get_form(resource_instance, context)
       # First structuration
-      if !self.respond_to?(:submit64_form_builder)
-        raise Submit64Exception.new("Method 'submit64_form_builder' must be defined in the #{self.to_s} model", 400)
+      if !self.respond_to?(@submit64_method_injector.form_builder)
+        raise Submit64Exception.new("Method #{@submit64_method_injector.form_builder.to_sym} must be defined in the #{self.to_s} model", 400)
       end
       default_form_metadata = self.submit64_get_default_form
-      form_metadata = submit64_try_object_method_with_args(self, :submit64_form_builder, resource_instance, context)
+      form_metadata = submit64_try_object_method_with_args(self, @submit64_method_injector.form_builder, resource_instance, context)
       form_metadata = default_form_metadata.merge(form_metadata)
 
       # Early projection for lazy definition

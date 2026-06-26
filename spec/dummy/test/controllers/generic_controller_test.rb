@@ -17,6 +17,22 @@ class GenericControllerTest < ActionDispatch::IntegrationTest
 
   end
 
+  test "Submit64 GetMetadata With Injector" do
+    url = "/api/get-metadata-and-data-submit64-injector"
+    article1 = articles(:one)
+
+    # Regular
+    payload = {
+      submit64Params: {
+        resourceName: "Article",
+        resourceId: article1.id
+      }
+    }
+    post(url, params: payload)
+    assert_response :success
+
+  end
+
   test "Submit64 GetAssociationData" do
     url = "/api/get-association-data-submit64"
     article1 = articles(:one)

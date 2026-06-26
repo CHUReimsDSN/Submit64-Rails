@@ -8,7 +8,7 @@ module Submit64
         context: {}
       ]
     )
-  end
+  end 
 
   def self.permit_association_data_params(params)
     params.permit(

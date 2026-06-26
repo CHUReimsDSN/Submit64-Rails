@@ -12,4 +12,12 @@ class Article < ApplicationRecord
     }
     end
 
+    def self.submit64_lifecycle_events
+      {}
+    end
+
+    def self.test_injector
+      {}
+    end
+
 end

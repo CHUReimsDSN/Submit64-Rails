@@ -66,7 +66,7 @@ module Submit64
     end
   end
 
-  def self.get_default_injector
+  def self.get_default_method_injector
     MethodNameInjector.new
   end
 

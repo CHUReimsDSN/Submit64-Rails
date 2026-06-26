@@ -10,8 +10,9 @@ module Submit64
                 :form_builder
 
     def initialize(method_definition=nil)
+        definition = get_default_definition
         if method_definition != nil && method_definition.class == Hash
-            definition = get_default_definition.merge(method_definition)
+            definition = definition.merge(method_definition)
         end
         @lifecycle_events = definition[:lifecycle_events]
         @association_select_columns = definition[:association_select_columns]
@@ -21,8 +22,7 @@ module Submit64
         @form_builder = definition[:form_builder]
     end
 
-    private
-    def self.get_default_definition
+    def get_default_definition
         {
             lifecycle_events: :submit64_lifecycle_events,
             association_select_columns: :submit64_association_select_columns,

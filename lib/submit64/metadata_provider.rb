@@ -989,7 +989,7 @@ module Submit64
     def submit64_get_form(resource_instance, context)
       # First structuration
       if !self.respond_to?(@submit64_method_injector.form_builder)
-        raise Submit64Exception.new("Method 'submit64_form_builder' must be defined in the #{self.to_s} model", 400)
+        raise Submit64Exception.new("Method #{@submit64_method_injector.form_builder.to_sym} must be defined in the #{self.to_s} model", 400)
       end
       default_form_metadata = self.submit64_get_default_form
       form_metadata = submit64_try_object_method_with_args(self, @submit64_method_injector.form_builder, resource_instance, context)

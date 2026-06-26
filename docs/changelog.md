@@ -4,6 +4,12 @@ title: Changelog
 
 # Changelog
 
+## 1.5.0
+
+- Ajout de l'injecteur de méthode dans la procédure de création des formulaires
+
+---
+
 ## 1.4.0
 
 - Suppression des définitions de `suffix`, `prefix`, `clearable`, `resetable` et `hint` des champs et des formulaires. Ces définitions se font désormais côté client.

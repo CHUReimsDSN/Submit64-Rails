@@ -6,29 +6,33 @@ require_relative "submit64/submit64_exception"
 require_relative "submit64/utils"
 require_relative "submit64/version"
 require_relative "submit64/lifecycle_data"
+require_relative "submit64/method_name_injector"
 
 module Submit64
 
-  def self.get_metadata_and_data(params)
+  def self.get_metadata_and_data(params, method_injector = get_default_method_injector)
     safe_exec do
       resource_class = ensure_params_and_resource_are_valid(params)
       request_params = params[:submit64Params]
+      resource_class.submit64_set_method_injector(method_injector)
       resource_class.submit64_get_form_metadata_and_data(request_params)
     end
   end
 
-  def self.get_association_data(params)
+  def self.get_association_data(params, method_injector = get_default_method_injector)
     safe_exec do
       resource_class = ensure_params_and_resource_are_valid(params)
       request_params = params[:submit64Params]
+      resource_class.submit64_set_method_injector(method_injector)
       resource_class.submit64_get_association_data(request_params)
     end
   end
 
-  def self.submit_form(params)
+  def self.submit_form(params, method_injector = get_default_method_injector)
     safe_exec do
       resource_class = ensure_params_and_resource_are_valid(params)
       request_params = params[:submit64Params]
+      resource_class.submit64_set_method_injector(method_injector)
       resource_class.submit64_get_submit_data(request_params)
     end
   end
@@ -60,6 +64,10 @@ module Submit64
       exception.set_backtrace(e.backtrace)
       raise exception
     end
+  end
+
+  def self.get_default_injector
+    MethodNameInjector.new
   end
 
   private_constant :LifecycleData

@@ -219,7 +219,7 @@ module Submit64
             next
           end
           base64_attachments = value["add"].map do |file_pending|
-            base64_to_uploaded_file(file_pending["base64"], file_pending["filename"])
+            submit64_base64_to_uploaded_file(file_pending["base64"], file_pending["filename"])
           end
           attachments[key] = request_params[:resourceData][key]
           attachments[key]["type"] = attachment_found[:type]
@@ -493,6 +493,7 @@ module Submit64
       if field[:default_value] == nil
         return
       end
+      from_class = self.to_s
       default_value = nil
       case field[:field_type]
       when 'string'
@@ -647,10 +648,6 @@ module Submit64
     def submit64_get_column_rules(field, field_type, form, context_name)
       rules = []
 
-      if !form[:use_model_validations] || field[:ignore_validation]
-        return rules
-      end
-
       association = self.reflect_on_association(field[:target])
       if association != nil
         case association.class.to_s.demodulize
@@ -670,7 +667,7 @@ module Submit64
       get_date_to_iso_8601 = -> (value) { return value.as_json }
       self.validators_on(field[:target]).each do |validator|
         validator_context = validator.options[:on]
-        if !validator_context.nil? && validator_context != context_name
+        if validator_context != nil && validator_context != context_name
           next
         end
 
@@ -978,7 +975,6 @@ module Submit64
     def submit64_get_default_form
       {
         sections: [],
-        use_model_validations: true,
         backend_date_format: 'YYYY-MM-DD',
         backend_datetime_format: 'YYYY-MM-DDTHH:mm:ss.SSSZ',
         resource_name: self.to_s,
@@ -1137,7 +1133,7 @@ module Submit64
       submit64_try_method_with_args(proc, *args)
     end
 
-    def base64_to_uploaded_file(base64, filename)
+    def submit64_base64_to_uploaded_file(base64, filename)
       if base64 =~ /^data:(.*?);base64,/
         content_type = Regexp.last_match(1)
         base64 = base64.split(",", 2).last

@@ -681,7 +681,7 @@ module Submit64
         end
 
         if validator.options[:allow_blank].present?
-          rules < { type: 'allowBlank' }
+          rules << { type: 'allowBlank' }
         end
 
         case validator.class.name.demodulize

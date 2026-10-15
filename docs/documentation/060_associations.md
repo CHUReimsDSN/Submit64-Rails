@@ -103,7 +103,7 @@ Par défaut, *Submit64* sélectionne toutes les colonnes des enregistrements de 
 Pour limiter les données récupérées, il est possible de définir la méthode `submit64_association_select_columns`.
 
 
-```ruby {comment.rb}
+```ruby [comment.rb]
 class Comment < ActiveRecord::Base
   extend Submit64::MetadataProvider
 

@@ -4,24 +4,30 @@ title: Associations
 
 # Associations
 
-Lors de la génération d'un champ d'association sur une autre table, il est possible de définir
-des logiques supplémentaires, comme l'affichage des données, les filtres, etc.
+*Submit64* permet de configurer le comportement des champs liés à des associations `ActiveRecord`.  
+Il est notamment possible de contrôler les enregistrements proposés à la sélection, les colonnes utilisées pour la recherche, les colonnes récupérées en base de données et le libellé affiché pour chaque résultat.
 
-::: warning Important 
-Les relations polymorphiques ne sont actuellement pas pris en charge et donc ignorées
+Ces possibilités permettent d'adapter les données proposées à l'utilisateur tout en maîtrisant les requêtes effectuées en base de données.
+
+::: warning 
+Les relations polymorphiques ne sont actuellement pas pris en charge et donc ignorées.
 :::
 
 
-## Champ de relation dans le formulaire  
+## Champ de relation  
 
-```ruby
-class MonModele < ActiveRecord::Base
+Pour afficher une association dans un formulaire, il suffit de déclarer son nom dans la liste des champs de `submit64_form_builder`.
+
+```ruby [article.rb]
+class Article < ActiveRecord::Base
   extend Submit64::MetadataProvider
+
+  has_many :comments
 
   def self.submit64_form_builder
     {
       sections: [
-        fields: [:nom_de_ma_relation]
+        fields: [:comments]
       ]
     }
   end
@@ -29,118 +35,153 @@ class MonModele < ActiveRecord::Base
 end
 ```
 
-<br /><br /> 
+Le champ `comments` correspond ici à une association définie sur le modèle `ActiveRecord`.  
+*Submit64* utilise cette définition pour identifier l'association et récupérer les données nécessaires à son utilisation dans le formulaire.
 
 
 ## Lignes à séléctionnées
 
-Cette méthode permet de définir des filtres sur les lignes de l'association.
-```ruby
-class MonModele < ActiveRecord::Base
+La méthode `submit64_association_filter_rows` permet de restreindre les enregistrements pouvant être proposés dans une association.
+
+Elle doit retourner une relation `ActiveRecord`, sur laquelle *Submit64* pourra appliquer les filtres supplémentaires nécessaires à la recherche.
+
+```ruby [comment.rb]
+class Comment < ActiveRecord::Base
   extend Submit64::MetadataProvider
 
   def self.submit64_association_filter_rows
-    where(libelle: "Bonsoir")
+    where(content: "Hello!")
   end
 
 end
 ```
 
-<br /><br /> 
+Dans cet exemple, seuls les enregistrements dont le champ content vaut "Hello!" seront éligibles à la sélection.
+Cette méthode permet notamment de limiter les résultats à un sous-ensemble pertinent pour votre application.
 
 
-## Colonnes à filtrées (pour la recherche)
+## Colonnes de recherche
 
-Cette méthode permet de définir sur quelles colonnes le filtre de recherche côté client agit.
-Chaque colonne définie sera évalué indépendamment des autres.
-Exemple avec un filtre de recherche égal à "bonjour" :
+La méthode `submit64_association_filter_columns` permet de définir les colonnes sur lesquelles s'applique la recherche effectuée.
 
-```ruby
-class MonModele < ActiveRecord::Base
+```ruby [comment.rb]
+class Comment < ActiveRecord::Base
   extend Submit64::MetadataProvider
   
   def self.submit64_association_filter_columns
-    [:id, :libelle, :description]
+    [:content]
   end
 
 end
-# SQL généré :
-#
-# WHERE ...
-# AND (
-# id ILIKE 'bonjour' OR 
-# libelle ILIKE 'bonjour' OR 
-# description ILIKE 'bonjour'
-# )
 ```
 
-::: tip Note 
-Si cette méthode n’est pas définie, Submit64 filtre automatiquement et si possible
-les colonnes `id` et `label`.
+Pour chaque recherche, *Submit64* utilise les colonnes définies afin de construire les conditions SQL correspondantes.  
+Chaque colonne est évaluée indépendamment, puis les conditions sont regroupées avec un opérateur OR.
+
+Par exemple, pour une recherche contenant "bonjour", la logique obtenue est équivalente à :
+
+```sql
+WHERE ...
+  AND (
+    content LIKE 'bonjour'
+)
+```
+
+::: tip 
+Si cette méthode n'est pas définie, *Submit64* tente de filtrer automatiquement sur les colonnes `id` et `label`, lorsque cela est possible.
 :::
 
-::: tip Note 
-Ces filtres s'appliquent **après** ceux définis par `submit64_association_filter_rows`.
+::: tip 
+La recherche est appliquée après les restrictions définies par `submit64_association_filter_rows`.  
+Les deux méthodes sont donc complémentaires : la première restreint les enregistrements éligibles, tandis que la seconde définit les colonnes sur lesquelles la recherche est effectuée.
 :::
 
 
-<br /><br /> 
+## Colonnes à séléctionnées
 
-## Colonnes à séléctionnées (pour la recherche)
+Par défaut, *Submit64* sélectionne toutes les colonnes des enregistrements de l'association.  
+Pour limiter les données récupérées, il est possible de définir la méthode `submit64_association_select_columns`.
 
-La méthode `submit64_association_select_columns` permet d'éviter de sélectionner l'entièreté de
-la ligne en base et de définir une liste arbitraire de colonnes.
 
-```ruby
-class MonModele < ActiveRecord::Base
+```ruby {comment.rb}
+class Comment < ActiveRecord::Base
   extend Submit64::MetadataProvider
 
   def self.submit64_association_select_columns
-    [:id, :libelle]
+    [:id, :content]
   end
 
 end
 ```
 
-::: tip Note 
-Si cette méthode n’est pas définie, Submit64 sélectionne automatiquement toutes les colonnes.
-:::
+Dans cet exemple, seules les colonnes `id` et `content` sont sélectionnées.
 
-<br /><br /> 
+Cette configuration permet d'éviter de récupérer des colonnes inutiles, notamment lorsque les enregistrements contiennent des données volumineuses ou que l'association comporte de nombreux résultats.
+
+::: tip 
+Si cette méthode n’est pas définie, *Submit64* sélectionne automatiquement toutes les colonnes.
+:::
 
 ## Libellé
 
-Lors de la sélection d'une association côté client, la liste affiche un libellé pouvant
-être surchargée coté serveur.
+Lorsqu'une association est proposée à la sélection dans les formulaires, chaque enregistrement est présenté à l'aide d'un libellé.  
+La méthode d'instance `submit64_association_label` permet de personnaliser ce texte.
 
-```ruby
-class MonModele < ActiveRecord::Base
+```ruby [comment.rb]
+class Comment < ActiveRecord::Base
   extend Submit64::MetadataProvider
 
   def submit64_association_label
-    "#{id} : #{libelle}"
+    "#{id} : #{content}"
   end
 
 end
 ```
 
-::: tip Note 
-Cette méthode doit être accordée avec les colonnes définies dans
-`submit64_association_select_columns`.
+Dans cet exemple, chaque résultat sera affiché sous la forme ` id : content`.
+
+Cette méthode est appelée sur chaque enregistrement éligible à l'association.  
+Elle doit donc être définie comme une méthode d'instance et non comme une méthode de classe.
+
+::: tip 
+Si cette méthode n'est pas définie, *Submit64* essaie successivement les méthodes `label`, `id` et `primary_key` pour déterminer le libellé.
 :::
 
-::: tip Note 
-Cette méthode ne doit pas être statique.
+::: warning
+La méthode est appelée pour chaque enregistrement éligible à l'association.  
+Évitez d'y effectuer des traitements coûteux ou des requêtes supplémentaires, afin de limiter les problèmes de performances.
 :::
 
-::: tip Note 
-Si cette méthode n'est pas définie, Submit64 essaie les méthodes `label`, `id`, et 
-`primary_key` dans cet ordre.
+::: tip
+Si le libellé utilise des attributs qui ne sont pas sélectionnés par `submit64_association_select_columns`, adaptez la sélection en conséquence.
 :::
 
+## Arguments d'association
 
-::: warning Important 
-Cette méthode est appelée à chaque ligne éligible à l'association. 
-Il ne faut donc pas y mettre de code lourd ni effectuer de requête pour éviter des 
-problèmes de performance.
-:::
+Les méthodes de configuration des associations acceptent toutes deux arguments :
+
+- `from_class`: le nom du modèle `ActiveRecord` d'origine, c'est-à-dire le modèle depuis lequel la relation est définie.
+- `context` : le [contexte](./080_context.md)
+
+Ces arguments permettent notamment d'adapter le comportement d'une association en fonction du modèle qui l'utilise et des informations transmises par votre application. Il se sont pas mandatoires.
+
+```ruby [comment.rb]
+class Comment < ActiveRecord::Base
+  extend Submit64::MetadataProvider
+
+  def submit64_association_label(from_class, context)
+    if context["my_custom_key"]
+      "Context is on ! :#{id}"
+    end
+    if from_class == "Article"
+      "#{id} : #{content}"
+    else
+      "#{content}"
+    end
+  end
+
+end
+```
+
+<!--@include: ./999_definition.md#type-fromclass-->
+<!--@include: ./999_definition.md#type-context-->

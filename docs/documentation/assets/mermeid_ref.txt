@@ -1,0 +1,41 @@
+flowchart TD
+A[before_validation]
+B[validate]
+C[after_validation]
+D[before_save]
+E[before_create]
+F[after_create]
+G[after_save]
+H[before_touch]
+I[after_touch]
+J[after_commit]
+
+K[on_submit_start]
+L[on_submit_before_assignation]
+M[on_submit_valid_before_save]
+N[on_submit_success]
+O[on_submit_fail]
+
+A --> B
+B --> C
+C --> M
+D --> G
+E --> F
+F --> H
+G --> H
+H --> I
+I --> J
+
+K --> L
+L --> A
+M --> D
+M --> E
+J --> N
+C --> O
+
+
+classDef activeRecord fill:#,color:#EEE
+classDef submit64 fill:##0369a1,color:#EEE
+
+class A,B,C,D,E,F,G,H,I,J activeRecord
+class K,L,M,N,O submit64

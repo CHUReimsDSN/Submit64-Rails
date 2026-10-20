@@ -978,7 +978,6 @@ module Submit64
         backend_date_format: 'YYYY-MM-DD',
         backend_datetime_format: 'YYYY-MM-DDTHH:mm:ss.SSSZ',
         resource_name: self.to_s,
-        css_class: '',
       }
     end
 
@@ -1091,7 +1090,6 @@ module Submit64
             readonly: field_map[:readonly],
             rules: form_rules,
             static_select_options: form_select_options,
-            css_class: field_map[:css_class],
             default_value: field_map[:default_value],
             unlinked: unlinked
           }
@@ -1104,7 +1102,6 @@ module Submit64
           label: section_map[:label],
           icon: section_map[:icon],
           readonly: section_map[:readonly],
-          css_class: section_map[:css_class],
         }
       end
       {
@@ -1113,7 +1110,6 @@ module Submit64
         use_model_validations: form_metadata[:use_model_validations],
         backend_date_format: form_metadata[:backend_date_format],
         backend_datetime_format: form_metadata[:backend_datetime_format],
-        css_class: form_metadata[:css_class],
         readonly: form_metadata[:readonly],
       }
     end

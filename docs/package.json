@@ -1,18 +1,18 @@
 {
   "scripts": {
-    "compute-docs": "ts-node scripts/compute.ts",
+    "compute-docs": "tsx scripts/compute.ts",
     "docs:dev": "npm run compute-docs && vitepress dev",
     "docs:build": "npm run compute-docs && vitepress build",
     "docs:preview": "npm run compute-docs && vitepress preview"
   },
   "devDependencies": {
-    "@types/node": "^25.0.10",
-    "mermaid": "^11.12.2",
+    "@types/node": "^26.6.5",
     "ts-morph": "^27.0.2",
-    "ts-node": "^10.9.2",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.3",
     "vitepress": "^2.0.0-alpha.15",
-    "vitepress-plugin-mermaid": "^2.0.17"
+    "vitepress-bigbang": "https://github.com/CHUReimsDSN/Vitepress-BigBang.git",
+    "vitepress-plugin-group-icons": "^1.7.6"
   },
   "type": "module"
 }

@@ -4,7 +4,7 @@ title: Définition API
 
 # Définition API
 
-## submit64_form_builder
+## submit64_form_builder  
 
 ```ruby
 def submit64_form_builder: (ResourceInstance?, Context?) -> FormHash
@@ -12,7 +12,6 @@ def submit64_form_builder: (ResourceInstance?, Context?) -> FormHash
 
 ```ruby
 type ResourceInstance = Class | nil
-type Context = Hash[String, untyped]
 
 type FormHash = {
 
@@ -27,9 +26,6 @@ type FormHash = {
 
   # Format des datetimes pour la sauvegarde
   backend_datetime_format: String = 'YYYY-MM-DDTHH:mm:ss.SSSZ'
-
-  # Classe css sur le container du formulaire
-  css_class: String = ""
 
   # Formulaire en lecture seule
   readonly: Boolean = false
@@ -48,9 +44,6 @@ type SectionHash = {
 
   # Section en lecture seule
   readonly: Boolean = false
-
-  # Classe css sur la section
-  css_class: String = ''
 }
 
 
@@ -65,9 +58,6 @@ type FieldHash = {
 
   # Champ en lecture seule
   readonly: Boolean = false
-
-  # Classe css sur le champ
-  css_class: String = nil
 
   # Valeur par défaut du champ pour le mode création
   # Pour les associations belongs_to, il faut donner la valeur de la clé étrangère
@@ -112,20 +102,11 @@ type UnlinkHash = {
 }
 ```
 
-<br /><br />
-
 ## submit64_association_filter_rows
 
 ```ruby
 def submit64_association_filter_rows: (FromClass?, Context?) -> ActiveRecord::Relation
 ```
-
-```ruby
-type FromClass = String
-type Context = Hash[String, untyped]
-```
-
-<br /><br />
 
 ## submit64_association_filter_columns
 
@@ -133,38 +114,17 @@ type Context = Hash[String, untyped]
 def submit64_association_filter_columns: (FromClass?, Context?) -> Symbol[]
 ```
 
-```ruby
-type Context = Hash[String, untyped]
-type FromClass = String
-```
-
-<br /><br />
-
 ## submit64_association_select_columns
 
 ```ruby
 def submit64_association_select_columns: (FromClass?, Context?) -> Symbol[]
 ```
 
-```ruby
-type Context = Hash[String, untyped]
-type FromClass = String
-```
-
-<br /><br />
-
 ## submit64_association_label
 
 ```ruby
 def submit64_association_label: (FromClass?, Context?) -> String
 ```
-
-```ruby
-type Context = Hash[String, untyped]
-type FromClass = String
-```
-
-<br /><br />
 
 ## submit64_lifecycle_events
 
@@ -189,4 +149,14 @@ type LifeCycles = {
 }
 ```
 
-<br /><br />
+## type Context
+
+```ruby
+type Context = Hash[String, untyped]
+```
+
+## type FromClass
+
+```ruby
+type FromClass = String
+```

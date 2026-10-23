@@ -28,7 +28,7 @@ module Submit64
       end
       lifecycle_callbacks = submit64_try_object_method_with_args(self, @submit64_method_injector.lifecycle_events, context) || {}
       on_metadata_data = OnMetadataData.from
-      submit64_try_lifecycle_callback(lifecycle_callbacks[:on_metadata_start], on_metadata_data, context)
+      submit64_try_lifecycle_callback(lifecycle_callbacks[:on_get_metadata_start], on_metadata_data, context)
 
       resource_instance = self.all
                               .where({ self.primary_key.to_sym => request_params[:resourceId] })
@@ -46,11 +46,12 @@ module Submit64
       end
 
       on_metadata_data.resync(form: form_metadata, resource_data: resource_data)
-      submit64_try_lifecycle_callback(lifecycle_callbacks[:on_metadata_end], on_metadata_data, context)
+      submit64_try_lifecycle_callback(lifecycle_callbacks[:on_get_metadata_end], on_metadata_data, context)
       
       {
         form: form_metadata,
-        resource_data: resource_data
+        resource_data: resource_data,
+        context: context
       }
     end
 
@@ -147,7 +148,8 @@ module Submit64
       submit64_try_lifecycle_callback(lifecycle_callbacks[:on_get_association_end], on_association_data, context)
       {
         rows: builder_rows,
-        row_count: builder_row_count
+        row_count: builder_row_count,
+        context: context
       }
     end
 
@@ -294,7 +296,8 @@ module Submit64
             return {
               success: false,
               resource_id: resource_id,
-              errors: error_messages
+              errors: error_messages,
+              context: context
             }
           end
         end
@@ -333,7 +336,8 @@ module Submit64
         resource_id: resource_id,
         form: form,
         resource_data: resource_data_renew[:resource_data],
-        errors: error_messages
+        errors: error_messages,
+        context: context
       }
     end
 

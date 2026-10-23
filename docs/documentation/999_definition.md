@@ -149,8 +149,6 @@ type LifeCycles = {
 }
 ```
 
-```ruby
-
 
 ## type Context
 
